@@ -1,0 +1,52 @@
+<!-- Media Picker Modal (herbruikbaar) -->
+<div class="modal fade" id="mediaPickerModal" tabindex="-1" aria-labelledby="mediaPickerLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="mediaPickerLabel"><i class="fa-regular fa-images me-2"></i>Kies een afbeelding</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+      </div>
+      <div class="modal-body p-0">
+        <!-- IFRAME laadt de picker-modus -->
+        <iframe id="mediaPickerFrame" src="/cms/media?picker=1" style="width:100%;height:70vh;border:0;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const modalEl = document.getElementById('mediaPickerModal');
+    const frame = document.getElementById('mediaPickerFrame');
+    let targetInputSelector = null;
+    let startDir = null;
+
+    // Externe trigger: <button data-bs-target="#mediaPickerModal" data-target-input="#image_name" data-start-dir="artist">
+    modalEl.addEventListener('show.bs.modal', function (e) {
+      const trigger = e.relatedTarget;
+      targetInputSelector = trigger?.getAttribute('data-target-input') || null;
+      startDir = trigger?.getAttribute('data-start-dir') || null;
+
+      try {
+        const base = '/cms/media?picker=1';
+        frame.src = startDir ? `${base}&dir=${encodeURIComponent(startDir)}` : base;
+      } catch (err) {}
+    });
+
+    // Ontvang selectie uit iframe (alleen bestandsnaam)
+    window.addEventListener('message', function (event) {
+      const data = event.data || {};
+      if (data.type === 'media-picker-select' && data.name && targetInputSelector) {
+        const input = document.querySelector(targetInputSelector);
+        if (input) {
+          input.value = data.name; // uitsluitend de bestandsnaam
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        // Sluit modal
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+      }
+    });
+  })();
+</script>

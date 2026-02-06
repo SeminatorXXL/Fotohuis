@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /login
+Disallow: /pages
+Disallow: /general
+
+Sitemap: https://www.fotohuisvenray.nl/sitemap.xml

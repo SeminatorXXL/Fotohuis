@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('parts/header') %>
+    <link rel="stylesheet" href="/private/media-manager.css">
+    <style>
+      /* In picker-mode we hide the sidebar for compactness */
+      <% if (pickerMode) { %>
+      .sidebar{ display:none !important; }
+      .content.container{ margin-left:0 !important; }
+      
+      <% } %>
+    </style>
+  </head>
+  <body>
+    <main class="d-flex">
+      <% if (!pickerMode) { %>
+      <div class="sidebar">
+        <%- include('parts/sidebar', { session: session }) %>
+      </div>
+      <% } %>
+
+      <div class="content container">
+        <h1 class="mb-3">
+          <% if (pickerMode) { %>
+            <i class="fa-regular fa-images me-2"></i>Select an image
+          <% } else { %>
+            <i class="fa-regular fa-folder-open me-2"></i>Media
+          <% } %>
+        </h1>
+
+        <%- include('parts/flash') %>
+
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <% crumbs.forEach((c, i) => { %>
+              <li class="breadcrumb-item <%= i === crumbs.length-1 ? 'active' : '' %>">
+                <% if (i === crumbs.length-1) { %>
+                  <%= c.name %>
+                <% } else { %>
+                  <a href="<%= c.url %>"><%= c.name %></a>
+                <% } %>
+              </li>
+            <% }) %>
+          </ol>
+        </nav>
+
+        <!-- Actions -->
+        <!-- Placeholder for upload validation alerts -->
+        <div id="uploadAlertPlaceholder" class="mb-3"></div>
+
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          <form class="d-flex align-items-center gap-2" action="/cms/media/mkdir" method="post" novalidate>
+            <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+            <input type="hidden" name="dir" value="<%= dir %>">
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-regular fa-folder"></i></span>
+              <input class="form-control" type="text" name="name" placeholder="New folder name" aria-label="New folder name" required>
+            </div>
+            <% if (!pickerMode) { %>
+              <button class="btn btn-secondary"><i class="fa-solid fa-folder-plus me-1"></i>Create folder</button>
+            <% } else { %>
+              <button class="btn btn-outline-secondary"><i class="fa-solid fa-folder-plus me-1"></i>Create folder</button>
+            <% } %>
+          </form>
+
+          <form id="uploadForm" class="d-flex align-items-center gap-2" action="/cms/media/upload" method="post" enctype="multipart/form-data">
+            <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+            <input type="hidden" name="dir" value="<%= dir %>">
+            <input id="fileUploadInput" class="form-control" type="file" name="files" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.svg" aria-label="Bestanden kiezen" required>
+            <button id="uploadButton" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Upload</button>
+          </form>
+        </div>
+
+        <!-- Folders -->
+        <div class="mb-4">
+          <h5 class="mb-2"><i class="fa-regular fa-folder me-2"></i>Folders</h5>
+          <% if (folders.length === 0) { %>
+            <div class="text-muted">No folders in this directory.</div>
+          <% } else { %>
+            <div class="row g-3">
+              <% folders.forEach(f => { %>
+                <div class="col-6 col-md-4 col-lg-3">
+                  <a class="folder-card text-decoration-none" href="<%= f.url %>" title="Open folder <%= f.name %>">
+                    <div class="card h-100 p-3 text-center">
+                      <i class="fa-regular fa-folder fa-2x mb-2"></i>
+                      <div class="fw-semibold text-truncate" title="<%= f.name %>"><%= f.name %></div>
+                      <div class="small text-muted"><%= new Date(f.modified).toLocaleString() %></div>
+                    </div>
+                  </a>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Files -->
+        <div class="mb-2 d-flex align-items-center justify-content-between">
+          <h5 class="mb-0"><i class="fa-regular fa-file-image me-2"></i>Files</h5>
+          <div class="small text-muted"><%= files.length %> item(s)</div>
+        </div>
+
+        <% if (files.length === 0) { %>
+          <div class="text-muted">No files in this directory.</div>
+        <% } else { %>
+          <div class="row g-3">
+            <% files.forEach(file => { %>
+              <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100">
+                  <div class="ratio ratio-1x1 border-bottom bg-light d-flex align-items-center justify-content-center overflow-hidden">
+                    <% if (file.isImage) { %>
+                      <img src="<%= file.publicUrl %>" alt="<%= file.name %>" class="img-fluid object-fit-cover preview-img">
+                    <% } else { %>
+                      <i class="<%= file.icon %> fa-2x text-muted"></i>
+                    <% } %>
+                  </div>
+                  <div class="card-body p-2">
+                    <div class="small fw-semibold text-truncate" title="<%= file.name %>"><%= file.name %></div>
+                    <div class="small text-muted"><%= file.sizeKB %> KB · <%= new Date(file.modified).toLocaleDateString() %></div>
+                    <div class="mt-2 d-flex gap-2">
+                      <% if (pickerMode) { %>
+                        <!-- ONLY RETURNS THE FILENAME -->
+                        <button type="button" class="btn btn-sm btn-primary" onclick="selectFile('<%- file.name %>')" title="Select">
+                          <i class="fa-regular fa-circle-check me-1"></i>Select
+                        </button>
+                      <% } %>
+                      <a class="btn btn-sm btn-outline-secondary" href="<%= file.publicUrl %>" target="_blank" title="Open">
+                        <i class="fa-regular fa-eye"></i>
+                      </a>
+                      <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#copyLinkModal" data-url="<%= file.publicUrl %>" title="Copy URL">
+                        <i class="fa-regular fa-copy"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteFileModal" data-filename="<%= file.name %>" title="Delete">
+                        <i class="fa-regular fa-trash-can"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </main>
+
+    <!-- Copy link modal -->
+    <div class="modal fade" id="copyLinkModal" tabindex="-1" aria-labelledby="copyLinkLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="copyLinkLabel">Copy File URL</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-regular fa-link"></i></span>
+              <input id="fileUrlInput" type="text" class="form-control" readonly>
+              <button class="btn btn-primary" id="copyBtn"><i class="fa-regular fa-copy me-1"></i>Copy</button>
+            </div>
+            <div class="form-text mt-2">Paste this URL into your content or form.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete file modal -->
+    <div class="modal fade" id="deleteFileModal" tabindex="-1" aria-labelledby="deleteFileLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteFileLabel">Confirm Deletion</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete the file <strong id="fileNameToDelete"></strong>? This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <form id="deleteForm" action="/cms/media/delete" method="POST" class="d-inline">
+              <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+              <input type="hidden" name="dir" value="<%= dir %>">
+              <input type="hidden" id="deleteFileNameInput" name="filename">
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- Picker communication: ONLY send back the filename
+      function selectFile(name) {
+        try {
+          window.parent.postMessage({ type: 'media-picker-select', name }, '*');
+        } catch (e) {}
+      }
+
+      // Copy-link modal init
+      const copyLinkModal = document.getElementById('copyLinkModal');
+      if (copyLinkModal) {
+        copyLinkModal.addEventListener('show.bs.modal', (e) => {
+          const trigger = e.relatedTarget;
+          const url = trigger?.getAttribute('data-url') || '';
+          document.getElementById('fileUrlInput').value = url;
+        });
+      }
+      const copyBtn = document.getElementById('copyBtn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          const input = document.getElementById('fileUrlInput');
+          input.select();
+          input.setSelectionRange(0, 99999);
+          try {
+            await navigator.clipboard.writeText(input.value);
+            copyBtn.innerHTML = '<i class="fa-regular fa-circle-check me-1"></i>Copied';
+            setTimeout(()=>copyBtn.innerHTML='<i class="fa-regular fa-copy me-1"></i>Copy',1200);
+          } catch {}
+        });
+      }
+
+      // Delete-file modal init
+      const deleteFileModal = document.getElementById('deleteFileModal');
+      if (deleteFileModal) {
+        deleteFileModal.addEventListener('show.bs.modal', (e) => {
+          const trigger = e.relatedTarget;
+          const filename = trigger?.getAttribute('data-filename') || '';
+          // Update modal content
+          document.getElementById('fileNameToDelete').textContent = filename;
+          document.getElementById('deleteFileNameInput').value = filename;
+        });
+      }
+
+      function showUploadError(message) {
+        const placeholder = document.getElementById('uploadAlertPlaceholder');
+        if (!placeholder) return;
+        placeholder.innerHTML = `
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        `;
+      }
+
+      // --- Upload form validation
+      const uploadForm = document.getElementById('uploadForm');
+      if (uploadForm) {
+        uploadForm.addEventListener('submit', function(event) {
+          const fileInput = document.getElementById('fileUploadInput');
+          // Use server-provided max size, default to 5MB if not provided
+          const maxUploadSize = '<%- maxUploadSize || "5mb" %>';
+          const sizeInMB = parseFloat(maxUploadSize);
+          let maxFileSize = 5 * 1024 * 1024; // Default
+          if (!isNaN(sizeInMB)) {
+            if (maxUploadSize.toLowerCase().includes('mb')) {
+              maxFileSize = sizeInMB * 1024 * 1024;
+            }
+          }
+
+          const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
+          const uploadButton = document.getElementById('uploadButton');
+
+          // Clear previous alerts
+          const placeholder = document.getElementById('uploadAlertPlaceholder');
+          if(placeholder) placeholder.innerHTML = '';
+
+          for (const file of fileInput.files) {
+            const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`;
+
+            if (!allowedExtensions.includes(fileExtension)) {
+              showUploadError(`File type not allowed for "${file.name}". Please upload a valid image file.`);
+              event.preventDefault(); // Stop form submission
+              fileInput.value = ''; // Clear the selected files
+              return;
+            }
+
+            if (file.size > maxFileSize) {
+              showUploadError(`File "${file.name}" is too large. The maximum file size is ${maxUploadSize}.`);
+              event.preventDefault(); // Stop form submission
+              fileInput.value = ''; // Clear the selected files
+              return;
+            }
+          }
+
+          // Disable button to prevent multiple submissions
+          if (uploadButton) {
+            uploadButton.disabled = true;
+            uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Uploading...';
+          }
+        });
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

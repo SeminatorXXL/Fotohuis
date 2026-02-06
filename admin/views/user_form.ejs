@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <%- include('parts/header') %>
+  <title><%= mode === 'create' ? 'Create user' : 'Edit user' %> | <%= companyInfo?.name || 'Admin' %></title>
+</head>
+<body>
+<main class="d-flex">
+  <div class="sidebar">
+    <%- include('parts/sidebar', { session: session }) %>
+  </div>
+
+  <div class="content container">
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <h1 class="mb-0">
+        <i class="fa-solid fa-user-pen me-2"></i>
+        <%= mode === 'create' ? 'Create user' : 'Edit user' %>
+      </h1>
+      <a href="/cms/users" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-arrow-left me-1"></i> Terug
+      </a>
+    </div>
+
+    <%- include('parts/flash') %>
+
+    <% if (errors && errors.length) { %>
+      <div class="alert alert-danger" role="alert">
+        <ul class="mb-0">
+          <% errors.forEach(e => { %><li><%= e.msg %></li><% }) %>
+        </ul>
+      </div>
+    <% } %>
+
+    <form method="post" novalidate>
+      <input type="hidden" name="_csrf" value="<%= _csrf || '' %>">
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="name" class="form-label">Naam</label>
+          <input type="text" id="name" name="name" class="form-control" required
+                 value="<%= user?.name || '' %>" placeholder="Volledige naam" aria-describedby="nameHelp">
+          <div id="nameHelp" class="form-text">Bijv. “Jane Doe”.</div>
+          <div class="invalid-feedback">Naam is verplicht.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="email" class="form-label">E-mail</label>
+          <input type="email" id="email" name="email" class="form-control" required
+                 value="<%= user?.email || '' %>" placeholder="naam@domein.nl">
+          <div class="invalid-feedback">Voer een geldig e-mailadres in.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="password" class="form-label">Wachtwoord <%= mode === 'create' ? '' : '(optioneel)' %></label>
+          <input type="password" id="password" name="password" class="form-control" <%= mode === 'create' ? 'required' : '' %>
+                 placeholder="<%= mode === 'create' ? 'Minimaal 8 tekens' : 'Alleen invullen om te wijzigen' %>">
+          <div class="invalid-feedback">Wachtwoord <%= mode === 'create' ? 'is verplicht en ' : '' %>minimaal 8 tekens.</div>
+        </div>
+
+        <% if (session.user && session.user.role === 'admin') { %>
+          <div class="col-md-3">
+            <label for="role" class="form-label">Rol</label>
+            <select id="role" name="role" class="form-select" aria-label="Gebruikersrol">
+              <option value="user" <%= user?.role === 'user' ? 'selected' : '' %>>user</option>
+              <option value="admin" <%= user?.role === 'admin' ? 'selected' : '' %>>admin</option>
+            </select>
+          </div>
+
+          <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="1" id="active" name="active" <%= (user?.active ?? 1) ? 'checked' : '' %>>
+              <label class="form-check-label" for="active">Actief</label>
+            </div>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="mt-4 d-flex">
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-floppy-disk me-1"></i> Opslaan
+        </button>
+        <a href="/cms/users" class="btn btn-secondary ms-2">Annuleren</a>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script>
+(function () {
+  const forms = document.querySelectorAll('form');
+  Array.from(forms).forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+})();
+</script>
+</body>
+</html>

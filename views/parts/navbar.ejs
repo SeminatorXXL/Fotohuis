@@ -1,0 +1,34 @@
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+
+        <a class="navbar-brand" href="/" title="<%= companyInfo.name %>">
+            <img src="/images/<%= companyInfo.logo %>" alt="<%= companyInfo.name %>" width="185" height="105">
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav">
+                <% if (navItems && navItems.length > 0) { %>
+                    <% navItems.forEach(item => { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<%= item.href %>" title="<%= item.menu_item_title %>">
+                                <%= item.menu_item_name %>
+                            </a>
+                        </li>
+                    <% }); %>
+                <% } else { %>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/" title="Back to home page">
+                            Back to home
+                        </a>
+                    </li>
+                <% } %>
+            </ul>
+            
+        </div>
+
+    </div>
+</nav>

@@ -1,0 +1,112 @@
+<%
+// Verwacht variabelen:
+//  - fieldId: unieke id voor het inputveld (string)
+//  - fieldName: form name (string)
+//  - label: labeltekst (string)
+//  - value: huidige waarde (string) -> bestandsnaam of (sub)pad of absolute URL
+//  - placeholder: (optioneel)
+//  - startDir: (optioneel) beginmap voor de picker, bv. "artists" of "artists/logo"
+//  - basePath: (optioneel) basis-submap voor previews als value alleen bestandsnaam is (zonder /)
+const _val = (value || '').trim();
+const _hasValue = _val.length > 0;
+const _base = (typeof basePath !== 'undefined' && basePath) ? String(basePath).replace(/^\/|\/$/g,'') : '';
+const _isAbsUrl = /^https?:\/\//i.test(_val);
+const _isRooted = /^\//.test(_val);
+const _hasSlash = _val.includes('/');
+
+// Bepaal preview bron:
+// 1) Absolute URL → direct
+// 2) Rooted path (begint met /) → direct
+// 3) Value bevat al subpad (artists/...) → prefix met /media
+// 4) Alleen bestandsnaam → /media[/basePath]/value
+let _previewSrc = '';
+if (_hasValue) {
+  if (_isAbsUrl || _isRooted) {
+    _previewSrc = _val;
+  } else if (_hasSlash) {
+    _previewSrc = '/media/' + _val.replace(/^\/+/,'');
+  } else {
+    _previewSrc = '/media' + (_base ? '/' + _base : '') + '/' + _val;
+  }
+}
+%>
+<div class="mb-3">
+  <label for="<%= fieldId %>" class="form-label"><%= label %></label>
+  <div class="input-group">
+    <span class="input-group-text"><i class="fa-regular fa-image"></i></span>
+    <input
+      type="text"
+      id="<%= fieldId %>"
+      name="<%= fieldName %>"
+      class="form-control"
+      value="<%= _val %>"
+      placeholder="<%= typeof placeholder !== 'undefined' ? placeholder : 'bestandsnaam.ext of artists/logo/naam.ext of https://...'%>"
+      data-preview-base="<%= _base %>">
+    <button
+      class="btn btn-outline-secondary"
+      type="button"
+      data-bs-toggle="modal"
+      data-bs-target="#mediaPickerModal"
+      data-target-input="#<%= fieldId %>"
+      <% if (typeof startDir !== 'undefined' && startDir) { %> data-start-dir="<%= startDir %>" <% } %>
+      title="Select image">
+      <i class="fa-regular fa-images me-1"></i>Select image
+    </button>
+  </div>
+
+  <div class="form-text">
+    Je kunt een <strong>bestandsnaam</strong> invullen (we tonen: <code>/media<%= _base ? '/' + _base : '' %>/…</code>), 
+    of een <strong>subpad binnen /media</strong> (bijv. <code>artists/logo/naam.png</code>), 
+    of een <strong>volledige URL</strong>.
+  </div>
+
+  <div class="d-flex align-items-center gap-2 mt-2">
+    <img
+      id="<%= fieldId %>_preview"
+      src="<%= _previewSrc %>"
+      alt="Preview"
+      class="img-thumbnail"
+      style="width:150px;height:150px;object-fit:cover;display:<%= _hasValue ? 'block' : 'none' %>;">
+  </div>
+</div>
+
+<script>
+  (function(){
+    const input = document.getElementById('<%= fieldId %>');
+    const img   = document.getElementById('<%= fieldId %>_preview');
+    const clearBtn = document.querySelector('[data-clear-input="#<%= fieldId %>"]');
+    if (!input || !img) return;
+
+    function buildSrc(val, base) {
+      if (!val) return '';
+      const v = String(val).trim();
+      if (/^https?:\/\//i.test(v)) return v;        // absolute URL
+      if (v.startsWith('/')) return v;             // rooted path
+      if (v.includes('/')) return '/media/' + v.replace(/^\/+/, ''); // value bevat eigen subpad
+      return '/media' + (base ? '/' + base : '') + '/' + v;          // alleen filename
+    }
+
+    function updatePreview() {
+      const name = (input.value || '').trim();
+      const base = (input.dataset.previewBase || '').replace(/^\/|\/$/g,'');
+      const src  = buildSrc(name, base);
+      if (name && src) {
+        img.src = src;
+        img.style.display = 'block';
+      } else {
+        img.src = '';
+        img.style.display = 'none';
+      }
+    }
+
+    input.addEventListener('input', updatePreview);
+    input.addEventListener('change', updatePreview);
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function(){
+        input.value = '';
+        updatePreview();
+      });
+    }
+  })();
+</script>

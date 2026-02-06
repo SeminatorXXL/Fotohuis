@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <%- include('parts/header') %>
+</head>
+<body>
+<main class="d-flex">
+  <div class="sidebar">
+    <%- include('parts/sidebar', { session: session }) %>
+  </div>
+
+  <div class="content redirects container">
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <h1 class="mb-0">
+        <i class="fa-solid fa-shuffle me-2"></i>
+        <%= page_title %>
+      </h1>
+      <div>
+        <a href="/cms/dashboard" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-gauge-high me-1"></i> Dashboard
+        </a>
+      </div>
+    </div>
+
+    <% if (success && success.length) { %>
+      <div class="alert alert-success" role="alert">
+        <%= Array.isArray(success) ? success.join('<br>') : success %>
+      </div>
+    <% } %>
+    <% if (error && error.length) { %>
+      <div class="alert alert-danger" role="alert">
+        <%= Array.isArray(error) ? error.join('<br>') : error %>
+      </div>
+    <% } %>
+    <% if (errors && errors.length) { %>
+      <div class="alert alert-danger" role="alert">
+        <ul class="mb-0">
+        <% errors.forEach(e => { %>
+          <li><%= e.msg %></li>
+        <% }) %>
+        </ul>
+      </div>
+    <% } %>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <form class="row g-2 needs-validation" novalidate method="post" action="/cms/redirects/create">
+          <% if (typeof csrfToken !== 'undefined') { %>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <% } %>
+          <div class="col-md-4">
+            <label for="new_from" class="form-label">From <span class="text-danger">*</span></label>
+            <input type="text" id="new_from" name="from" class="form-control" placeholder="/oud-pad"
+                   value="<%= (typeof createDraft !== 'undefined' && createDraft.from) ? createDraft.from : '' %>" required>
+            <div class="invalid-feedback">Begin met “/”.</div>
+          </div>
+          <div class="col-md-5">
+            <label for="new_to" class="form-label">To <span class="text-danger">*</span></label>
+            <input type="text" id="new_to" name="to" class="form-control" placeholder="/nieuw-pad of https://voorbeeld.nl/..."
+                   value="<%= (typeof createDraft !== 'undefined' && createDraft.to) ? createDraft.to : '' %>" required>
+            <div class="invalid-feedback">Vul een geldige URL of pad in.</div>
+          </div>
+          <div class="col-md-2">
+            <label for="new_type" class="form-label">Type</label>
+            <select id="new_type" name="type" class="form-select">
+              <option value="301" <%= (typeof createDraft !== 'undefined' && createDraft.type === '302') ? '' : 'selected' %>>301</option>
+              <option value="302" <%= (typeof createDraft !== 'undefined' && createDraft.type === '302') ? 'selected' : '' %>>302</option>
+            </select>
+          </div>
+          <div class="col-md-1 d-flex align-items-end">
+            <button type="submit" class="btn btn-success w-100">
+              <i class="fa-solid fa-plus me-1"></i> Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="vstack gap-2">
+    <% rows.forEach(r => { %>
+        <div class="card border-0" style="background: var(--bg-color);">
+        <div class="card-body p-2">
+            <div class="d-flex align-items-center gap-2">
+
+            <!-- UPDATE -->
+            <form method="post" action="/cms/redirects/update/<%= r.id %>"
+                    class="d-flex align-items-center gap-2 flex-grow-1">
+                <input type="text" name="from" value="<%= r.from %>"
+                    class="form-control" placeholder="/from" required style="min-width:260px;">
+                <input type="text" name="to" value="<%= r.to %>"
+                    class="form-control" placeholder="/to of https://..." required style="min-width:260px;">
+                <select name="type" class="form-select" style="width:110px;">
+                <option value="301" <%= r.type === '301' ? 'selected' : '' %>>301</option>
+                <option value="302" <%= r.type === '302' ? 'selected' : '' %>>302</option>
+                </select>
+                <button type="submit" class="btn btn-success" title="Opslaan" aria-label="Opslaan">
+                <i class="fa-solid fa-floppy-disk"></i>
+                </button>
+            </form>
+
+            <!-- DELETE (apart form; geen nested forms) -->
+            <form method="post" action="/cms/redirects/delete/<%= r.id %>"
+                    onsubmit="return confirm('Weet je zeker dat je deze redirect wilt verwijderen?');">
+                <button type="submit" class="btn btn-outline-danger" title="Verwijderen" aria-label="Verwijderen">
+                <i class="fa-solid fa-trash"></i>
+                </button>
+            </form>
+
+            </div>
+        </div>
+        </div>
+    <% }) %>
+    </div>
+
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const forms = document.querySelectorAll('.needs-validation');
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+:root {
+    /* Colors */
+    --primary-color: ;
+    --secondary-color: ;
+
+    --dark-color: #2a2a2a;
+    --bg-color: #3d3d3d;
+
+    --white: #ffffff;
+    --black: #000000;
+
+    --filter-white: brightness(0) saturate(100%) invert(100%) sepia(6%) saturate(0%) hue-rotate(70deg) brightness(108%) contrast(108%);
+
+    /* Icons */
+    --font-awesome: "Font Awesome 6 Free";
+    --icon-envelope: '\f0e0';
+    --icon-phone: '\f095';
+    --icon-play: '\f144';
+    --icon-check: '\f00c';
+    --icon-check-filled: '\f058';
+    --icon-briefcase: '\f0b1';
+
+    --container-width: 1320px;
+}
+
+body {font-family: 'Geneva', sans-serif; font-size: 1.125rem; line-height: 1.2; font-weight: 500; color: var(--white) !important; background-color: var(--dark-color); }
+h1, h2, h3, h4 {font-family: 'Dexens', serif; font-weight: normal; color: var(--white); margin-bottom: 24px;}
+
+h1 {font-size: 4.375rem;}
+h2 {font-size: 1.5rem;}
+h3 {font-size: 1.125rem; margin-bottom: 12px;}
+h4 {}
+
+@media only screen and (max-width: 1399px) {
+    
+
+}
+
+@media only screen and (max-width: 1199px) {
+
+    
+}
+
+@media only screen and (max-width: 991px) {
+    
+
+}
+
+@media only screen and (max-width: 767px) {
+
+    
+}
+
+@media only screen and (max-width: 575px) {
+
+    
+}
+
+@media only screen and (max-width: 479px) {
+
+
+}

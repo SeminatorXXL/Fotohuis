@@ -1,0 +1,121 @@
+:root {
+    --gold-color: #d8b866;
+    --dark-color: #2a2a2a;
+    --bg-color: #3d3d3d;
+
+    --white: #ffffff;
+
+    --filter-white: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(93deg) brightness(103%) contrast(103%);
+
+}
+
+h1, h2, h3 {color: var(--white);}
+
+body {background-color: var(--dark-color);}
+main {height: 100%;}
+
+code {color: var(--gold-color);}
+
+.inline {display: inline;}
+
+.login-logo {object-fit: contain;}
+
+.sidebar { position: sticky; top: 0; padding: 0 25px; height: 100dvh; background-color: var(--bg-color); }
+.sidebar h4 {margin: 0;}
+.sidebar h4 img {filter: var(--filter-white); object-fit: contain; height: auto; margin: 24px 0;}
+.sidebar .nav {}
+.sidebar .nav .nav-item {}
+.sidebar .nav .nav-item .nav-link {display: flex; align-items: center; gap: 0 6px;}
+.sidebar .nav .nav-item .nav-link i {}
+
+.content { color: var(--white); padding-top: 40px; padding-bottom: 40px;}
+.content h1 {margin-bottom: 24px;}
+.content .card { display: flex; justify-content: center; gap: 6px 0; color: var(--white); background-color: var(--bg-color); border-radius: 0; min-height: 150px;}
+.content .card h5 {margin: 0;}
+
+.content .separator { display: block; width: 90%; height: 2px; background-color: var(--bg-color); margin: 24px auto;}
+
+.btn:has(i) { width: fit-content; display: flex; align-items: center; gap: 0 6px;}
+
+/* Breadcrumbs */
+.breadcrumb  {}
+.breadcrumb .breadcrumb-item {color: var(--white) !important;}
+.breadcrumb .breadcrumb-item a {color: var(--white) !important;}
+.breadcrumb .breadcrumb-item.active {font-weight: 800;}
+
+.breadcrumb-item+.breadcrumb-item::before {color: var(--white);}
+
+/* Images */
+.preview-img { width: 100%; height: 100%; object-fit: cover;}
+
+/* CK editor */
+.ck.ck-editor__editable_inline {color: var(--dark-color);}
+.ck.ck-content {min-height: 200px;}
+
+input[disabled] {opacity: 0.5 !important;}
+
+/* pages */
+.content.pages .card {min-height: unset;}
+.content.pages .card .card-body {display: flex; align-items: center; gap: 0 12px;}
+.content.pages .card .card-body h5 {}
+.content.pages .card .card-body p {margin: 0 !important;}
+
+.cards-row {gap: 24px 0; margin-top: 24px;}
+
+/* Bookings */
+.list-group {gap: 12px;}
+
+.booking-item {background-color: var(--bg-color) !important; border: none; color: var(--white) !important;}
+.booking-item {}
+
+.modal {}
+.modal .modal-dialog {}
+.modal .modal-dialog .modal-content {background: var(--bg-color);}
+.modal .modal-dialog .modal-content .modal-header {}
+.modal .modal-dialog .modal-content .modal-header h5 {color: var(--white);}
+.modal .modal-dialog .modal-content .modal-header .muted {color: var(--white); opacity: 0.5;}
+.modal .modal-dialog .modal-content .modal-body {color: var(--white);}
+.modal .modal-dialog .modal-content .modal-body .text-muted {color: var(--white) !important; opacity: 0.5;}
+.modal .modal-dialog .modal-content .modal-body a {color: var(--gold-color);}
+
+.modal .modal-dialog .modal-content .modal-footer {}
+.modal .modal-dialog .modal-content .modal-footer .btn {width: fit-content;}
+
+/* Artist */
+.input-group-text.form-control-dark { border-right: 0; }
+.form-control-dark::placeholder { color: #9aa0a6; }
+
+
+.artist-card { background:var(--bg-color); color:var(--white);  }
+.artist-card .avatar { width:100px; height:100px; object-fit:cover; border-radius:50%; }
+.artist-card.unactive {opacity: 0.4;}
+
+.badge-soft { display: flex; align-items: center; background: var(--dark-color); color: var(--white); }
+
+.text-muted { color: rgb(from var(--white) r g b / 0.5) !important; }
+.ellipsis-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.4em;}
+
+.artist-edit .card {background-color: var(--bg-color);}
+
+#logo_preview {background: rgba(255, 255, 255, 0.2); object-fit: contain !important;}
+
+/* Media cards */
+.media-card .card { background:#1f1f1f; }
+.media-card .card-footer { background:#1a1a1a; }
+.media-card .ratio { border-bottom: 1px solid #2e2e2e; }
+
+/* Bedrijfs info */
+.content.general form {background: var(--bg-color); padding: 24px;}
+.form-text {color: rgb(from var(--white) r g b / 0.5);}
+
+.code-block {background-color: #1e1e1e;border-radius: 6px;padding: 0.75rem;}
+.code-input { font-family: monospace; color: #fff; background-color: #1e1e1e; border: none; resize: vertical; outline: none;}
+.code-input:focus {box-shadow: none;}
+
+/* Redirects */
+.content.redirects {}
+.content.redirects .card {min-height: unset;}
+
+/* Users */
+table.users {}
+table.users .buttons {display: flex; gap: 6px;}

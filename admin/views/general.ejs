@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('parts/header') %>
+</head>
+
+<body>
+    <main class="d-flex">
+
+        <div class="sidebar">
+           <%- include('parts/sidebar', { session: session }) %>
+        </div>
+
+        <div class="content general container">
+
+            <h1>Company Information</h1>
+
+            <% if (saved) { %>
+            <div class="alert alert-success">Company information updated successfully.</div>
+            <% } %>
+
+            <% if (errors && errors.length) { %>
+            <div class="alert alert-danger">
+                <ul>
+                <% errors.forEach(e => { %>
+                    <li><%= e.msg %></li>
+                <% }) %>
+                </ul>
+            </div>
+            <% } %>
+
+            <form method="post" action="/cms/general" class="needs-validation" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Company Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="<%= companyInfo.name %>" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="logo" class="form-label">Logo (filename)</label>
+                        <input type="text" class="form-control" id="logo" name="logo" value="<%= companyInfo.logo %>">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="email" class="form-label">Primary Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="<%= companyInfo.email %>" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email2" class="form-label">Secondary Email</label>
+                        <input type="email" class="form-control" id="email2" name="email2" value="<%= companyInfo.email2 %>">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="text" class="form-control" id="phone" name="phone" value="<%= companyInfo.phone %>">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="coc" class="form-label">Chamber of Commerce (CoC)</label>
+                        <input type="text" class="form-control" id="coc" name="coc" value="<%= companyInfo.coc %>">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="instagram" class="form-label">Instagram</label>
+                        <input type="url" class="form-control" id="instagram" name="instagram" value="<%= companyInfo.instagram %>">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="facebook" class="form-label">Facebook</label>
+                        <input type="url" class="form-control" id="facebook" name="facebook" value="<%= companyInfo.facebook %>">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="linkedin" class="form-label">LinkedIn</label>
+                        <input type="url" class="form-control" id="linkedin" name="linkedin" value="<%= companyInfo.linkedin %>">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="tiktok" class="form-label">TikTok</label>
+                        <input type="url" class="form-control" id="tiktok" name="tiktok" value="<%= companyInfo.tiktok %>">
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <h4>Google Tag Manager</h4>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="gtm_head" class="form-label">GTM Head Script</label>
+                        <div class="code-block">
+                        <textarea class="form-control code-input" id="gtm_head" name="gtm_head" rows="6"
+                            placeholder="Paste your GTM head script here"><%= companyInfo.gtm_head || '' %></textarea>
+                        </div>
+                        <div class="form-text">Script to include inside the &lt;head&gt; tag.</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="gtm_body" class="form-label">GTM Body Script</label>
+                        <div class="code-block">
+                        <textarea class="form-control code-input" id="gtm_body" name="gtm_body" rows="6" placeholder="Paste your GTM body noscript here"><%= companyInfo.gtm_body || '' %></textarea>
+                        </div>
+                        <div class="form-text">Noscript to include right after the &lt;body&gt; tag.</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="cookie" class="form-label">Cookie Script</label>
+                        <div class="code-block">
+                        <textarea class="form-control code-input" id="cookie" name="cookie" rows="1" placeholder="Paste your cookie script here"><%= companyInfo.cookie || '' %></textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="recaptcha_public_key" class="form-label">reCAPTCHA public key (V3)</label>
+                        <input type="text" class="form-control" id="recaptcha_public_key" name="recaptcha_public_key" value="<%= companyInfo.recaptcha_public_key %>">
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-save me-1"></i> Save changes
+                    </button>
+                </div>
+            </form>
+
+
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

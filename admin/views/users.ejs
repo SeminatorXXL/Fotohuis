@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <%- include('parts/header') %>
+  <title>Users | <%= companyInfo?.name || 'Admin' %></title>
+</head>
+<body>
+<main class="d-flex">
+  <div class="sidebar">
+    <%- include('parts/sidebar', { session: session }) %>
+  </div>
+
+  <div class="content container">
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <h1 class="mb-0">
+        <i class="fa-solid fa-users me-2"></i>
+        Users
+      </h1>
+
+      <% const isAdmin = (typeof session !== 'undefined' && session.user && session.user.role === 'admin'); %>
+
+      <% if (isAdmin) { %>
+        <a href="/cms/users/create" class="btn btn-primary">
+          <i class="fa-solid fa-plus me-1"></i> Nieuwe gebruiker
+        </a>
+      <% } %>
+    </div>
+
+    <%- include('parts/flash') %>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle users">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>E-mail</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% (users || []).forEach(u => { %>
+            <tr class="<%= u.active ? '' : 'table-secondary' %>">
+              <td><%= u.name %></td>
+              <td><%= u.email %></td>
+              <td>
+                <span class="badge <%= u.role === 'admin' ? 'bg-danger' : 'bg-secondary' %>"><%= u.role %></span>
+              </td>
+              <td>
+                <% if (u.active) { %>
+                  <span class="badge bg-success">Active</span>
+                <% } else { %>
+                  <span class="badge bg-secondary">Inactive</span>
+                <% } %>
+              </td>
+              <td>
+                <div class="buttons">
+                    <% if (isAdmin) { %>
+                      <a href="/cms/users/edit/<%= u.id %>" class="btn btn-sm btn-outline-secondary" title="Bewerken" aria-label="Bewerken">
+                        <i class="fa-solid fa-pen"></i>
+                      </a>
+                     <form action="/cms/users/delete/<%= u.id %>" method="post" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze gebruiker wil verwijderen?');">
+                        <% if (typeof _csrf !== 'undefined' && _csrf) { %>
+                            <input type="hidden" name="_csrf" value="<%= _csrf %>">
+                        <% } %>
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Verwijderen" aria-label="Verwijderen">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </form>
+                    <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</main>
+</body>
+</html>

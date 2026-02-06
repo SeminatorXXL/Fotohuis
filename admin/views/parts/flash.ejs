@@ -1,0 +1,10 @@
+<% if (typeof session !== 'undefined') { %>
+  <% if (session.flash_success) { %>
+    <div class="alert alert-success"><i class="fa-regular fa-circle-check me-2"></i><%= session.flash_success %></div>
+    <% session.flash_success = null; %>
+  <% } %>
+  <% if (session.flash_error) { %>
+    <div class="alert alert-danger"><i class="fa-regular fa-circle-xmark me-2"></i><%= session.flash_error %></div>
+    <% session.flash_error = null; %>
+  <% } %>
+<% } %>

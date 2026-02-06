@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+    <head>
+
+        <%- include('parts/header') %>
+    
+    </head>
+
+<body>
+<%- companyInfo.gtm_body %>
+
+
+    <%- include('parts/top') %>
+
+    <header>
+        <%- include('parts/navbar') %>
+    </header>
+
+    <main>
+
+        <section>
+            <figure class="main-logo">
+                <img src="" alt="">
+                <figcaption>
+                    <h1>
+                        <%= companyInfo.name %>
+                    </h1>
+                </figcaption>
+            </figure>
+        </section>
+
+    </main>
+
+    <footer>
+        <%- include('parts/footer') %>
+    </footer>
+
+    <script src="../js/sliders.js"></script>
+    
+</body>
+</html>
