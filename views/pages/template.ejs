@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+    <head>
+        <%- include('../parts/header') %>
+    </head>
+
+<body>
+<%- companyInfo.gtm_body %>
+
+    <%- include('../parts/top') %>
+
+    <header>
+        <%- include('../parts/navbar') %>
+        <%- include('../parts/banner') %>
+    </header>
+
+    <main>
+
+        <section class="container-fluid">
+            <div class="container">
+                <div class="row">
+                    <div class="col-xl-6">
+                        <div class="content">
+                            <% if (page.name) { %>
+                            <h1><%= page.name %></h1>
+                            <% } %>
+
+                            <div class="text">
+                                <% if (page.text) { %>
+                                <%- page.text %>
+                                <% } %>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="col-xl-6">
+                        <figure>
+                            <img src="" alt="">
+                        </figure>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="container-fluid">
+            <div class="container">
+                <h2>Bekijk mijn Expertises</h2>
+
+                <div class="swiper categories-swiper">
+                    <div class="swiper-wrapper">
+
+                        <% categories.forEach(category => { %>
+                            <div class="swiper-slide">
+
+                                <figure class="image">
+                                    <a href="/expertise/<%= category.alias %>"
+                                    title="Meer over <%= category.name %>?">
+
+                                        <img src="<%= category.banner %>"
+                                            alt="<%= category.name %>">
+                                    </a>
+
+                                    <figcaption>
+                                        <h3><%= category.name %></h3>
+                                    </figcaption>
+                                </figure>
+
+                            </div>
+                        <% }) %>
+
+                    </div>
+
+                    <!-- optioneel -->
+                    <div class="swiper-pagination"></div>
+                </div>
+            </div>
+        </section>
+
+
+    </main>
+
+
+    <footer>
+        <%- include('../parts/footer') %>
+    </footer>
+
+    <%- include('../parts/scripts') %>
+
+</body>
+</html>

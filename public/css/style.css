@@ -1,4 +1,11 @@
 
+/* Desktop: auto width */
+.category-slide {width: 320px;}
+
+/* Tablet */
+@media (max-width: 991px) {
+ 
+}
 
 @media only screen and (max-width: 1399px) {
     
@@ -11,7 +18,8 @@
 }
 
 @media only screen and (max-width: 991px) {
-    
+
+    .category-slide {width: 260px;}
 
 }
 

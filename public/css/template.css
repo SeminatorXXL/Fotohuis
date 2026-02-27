@@ -31,6 +31,10 @@ h2 {font-size: 1.5rem;}
 h3 {font-size: 1.125rem; margin-bottom: 12px;}
 h4 {}
 
+body { min-height: 100vh; display: flex; flex-direction: column; & main {flex: 1;}}
+
+footer {color: var(--white);}
+
 @media only screen and (max-width: 1399px) {
     
 
