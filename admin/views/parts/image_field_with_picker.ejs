@@ -21,12 +21,15 @@ const _hasSlash = _val.includes('/');
 // 4) Alleen bestandsnaam → /media[/basePath]/value
 let _previewSrc = '';
 if (_hasValue) {
+  const _normalized = _val.replace(/\\/g, '/').trim();
   if (_isAbsUrl || _isRooted) {
-    _previewSrc = _val;
+    _previewSrc = _normalized;
+  } else if (_normalized.startsWith('media/')) {
+    _previewSrc = '/' + _normalized;
   } else if (_hasSlash) {
-    _previewSrc = '/media/' + _val.replace(/^\/+/,'');
+    _previewSrc = '/media/' + _normalized.replace(/^\/+/,'');
   } else {
-    _previewSrc = '/media' + (_base ? '/' + _base : '') + '/' + _val;
+    _previewSrc = '/media' + (_base ? '/' + _base : '') + '/' + _normalized;
   }
 }
 %>
@@ -49,13 +52,13 @@ if (_hasValue) {
       data-bs-target="#mediaPickerModal"
       data-target-input="#<%= fieldId %>"
       <% if (typeof startDir !== 'undefined' && startDir) { %> data-start-dir="<%= startDir %>" <% } %>
-      title="Select image">
-      <i class="fa-regular fa-images me-1"></i>Select image
+      title="Afbeelding selecteren">
+      <i class="fa-regular fa-images me-1"></i>Afbeelding selecteren
     </button>
   </div>
 
   <div class="form-text">
-    Je kunt een <strong>bestandsnaam</strong> invullen (we tonen: <code>/media<%= _base ? '/' + _base : '' %>/…</code>), 
+    De picker vult standaard het <strong>volledige pad</strong> in (bijv. <code>/media/map/bestand.jpg</code>). Je kunt ook een <strong>bestandsnaam</strong> invullen (we tonen: <code>/media<%= _base ? '/' + _base : '' %>/…</code>), 
     of een <strong>subpad binnen /media</strong> (bijv. <code>artists/logo/naam.png</code>), 
     of een <strong>volledige URL</strong>.
   </div>
@@ -79,9 +82,10 @@ if (_hasValue) {
 
     function buildSrc(val, base) {
       if (!val) return '';
-      const v = String(val).trim();
+      const v = String(val).trim().replace(/\\/g, '/');
       if (/^https?:\/\//i.test(v)) return v;        // absolute URL
       if (v.startsWith('/')) return v;             // rooted path
+      if (v.startsWith('media/')) return '/' + v;  // explicit media path
       if (v.includes('/')) return '/media/' + v.replace(/^\/+/, ''); // value bevat eigen subpad
       return '/media' + (base ? '/' + base : '') + '/' + v;          // alleen filename
     }

@@ -26,12 +26,12 @@ function isAdmin(req, res, next) {
 router.get('/cms/users', isAuthenticated, isAdmin, async (req, res) => {
   try {
     const [users] = await db.query('SELECT id, name, email, role, active FROM users ORDER BY id DESC');
-    const [company] = await db.query('SELECT name FROM company WHERE id = 1');
+    const [company] = await db.query('SELECT name FROM company_info WHERE id = 1');
 
     // Render
     req.app.set('views', ADMIN_VIEWS);
     return res.render('users', {
-      page_title: 'Users',
+      page_title: 'Gebruikers',
       page_url: req.protocol + '://' + req.get('host') + req.originalUrl,
       users,
       session: req.session,
@@ -48,10 +48,10 @@ router.get('/cms/users', isAuthenticated, isAdmin, async (req, res) => {
 // ---------- Create (GET) ----------
 router.get('/cms/users/create', isAuthenticated, isAdmin, async (req, res) => {
   try {
-    const [company] = await db.query('SELECT name FROM company WHERE id = 1');
+    const [company] = await db.query('SELECT name FROM company_info WHERE id = 1');
     req.app.set('views', ADMIN_VIEWS);
     return res.render('user_form', {
-      page_title: 'Create user',
+      page_title: 'Gebruiker aanmaken',
       page_url: req.protocol + '://' + req.get('host') + req.originalUrl,
       mode: 'create',
       user: {},
@@ -89,10 +89,10 @@ router.post(
     const active = req.body.active ? 1 : 1; // standaard aan
 
     if (!errors.isEmpty()) {
-      const [company] = await db.query('SELECT name FROM company WHERE id = 1');
+      const [company] = await db.query('SELECT name FROM company_info WHERE id = 1');
       req.app.set('views', ADMIN_VIEWS);
       return res.render('user_form', {
-        page_title: 'Create user',
+        page_title: 'Gebruiker aanmaken',
         page_url: req.protocol + '://' + req.get('host') + req.originalUrl,
         mode: 'create',
         user: { name, email, role, active },
@@ -133,10 +133,10 @@ router.get('/cms/users/edit/:id', isAuthenticated, isAdmin, async (req, res) => 
       req.session.flash_error = 'Gebruiker niet gevonden.';
       return res.redirect('/cms/users');
     }
-    const [company] = await db.query('SELECT name FROM company WHERE id = 1');
+    const [company] = await db.query('SELECT name FROM company_info WHERE id = 1');
     req.app.set('views', ADMIN_VIEWS);
     return res.render('user_form', {
-      page_title: 'Edit user',
+      page_title: 'Gebruiker bewerken',
       page_url: req.protocol + '://' + req.get('host') + req.originalUrl,
       mode: 'edit',
       user,
@@ -175,10 +175,10 @@ router.post(
     const id = req.params.id;
 
     if (!errors.isEmpty()) {
-      const [company] = await db.query('SELECT name FROM company WHERE id = 1');
+      const [company] = await db.query('SELECT name FROM company_info WHERE id = 1');
       req.app.set('views', ADMIN_VIEWS);
       return res.render('user_form', {
-        page_title: 'Edit user',
+        page_title: 'Gebruiker bewerken',
         page_url: req.protocol + '://' + req.get('host') + req.originalUrl,
         mode: 'edit',
         user: { id, name, email, role, active },

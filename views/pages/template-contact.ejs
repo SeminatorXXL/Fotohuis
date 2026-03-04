@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <%- include('../parts/header') %>
+</head>
+<body>
+<%- companyInfo.gtm_body %>
+<%
+const contactAddressParts = [
+  companyInfo?.address_line_1,
+  companyInfo?.address_line_2,
+  companyInfo?.postal_code,
+  companyInfo?.city,
+  companyInfo?.country
+].filter(Boolean);
+const mapQuery = contactAddressParts.length
+  ? contactAddressParts.join(', ')
+  : ((companyInfo?.name || 'Fotohuis Venray') + ' Venray');
+%>
+
+    <header class="site-header">
+        <%- include('../parts/top') %>
+        <%- include('../parts/navbar') %>
+    </header>
+
+    <main>
+        <%- include('../parts/banner') %>
+
+        <section class="container-fluid">
+            <div class="container">
+                <% if (contactStatus === 'ok') { %>
+                    <div class="alert alert-success">Bedankt! Je bericht is verzonden.</div>
+                <% } %>
+                <% if (contactStatus === 'error') { %>
+                    <div class="alert alert-danger">Er ging iets mis bij het verzenden. Probeer het opnieuw.</div>
+                <% } %>
+                <% if (contactStatus === 'invalid') { %>
+                    <div class="alert alert-danger">Controleer de verplichte velden en probeer opnieuw.</div>
+                <% } %>
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="contact-panel">
+                            <h2>Contactgegevens</h2>
+                            <ul class="contact-list">
+                                <% if (companyInfo?.email) { %>
+                                    <li><i class="fa-regular fa-envelope"></i><a href="mailto:<%= companyInfo.email %>"><%= companyInfo.email %></a></li>
+                                <% } %>
+                                <% if (companyInfo?.phone) { %>
+                                    <li><i class="fa-solid fa-phone"></i><a href="tel:<%= String(companyInfo.phone).replace(/\s+/g, '') %>"><%= companyInfo.phone %></a></li>
+                                <% } %>
+                                <% if (companyInfo?.mobile) { %>
+                                    <li><i class="fa-solid fa-mobile-screen-button"></i><a href="tel:<%= String(companyInfo.mobile).replace(/\s+/g, '') %>"><%= companyInfo.mobile %></a></li>
+                                <% } %>
+                                <% if (contactAddressParts.length) { %>
+                                    <li><i class="fa-solid fa-location-dot"></i><span><%= [companyInfo.address_line_1, companyInfo.address_line_2].filter(Boolean).join(', ') %><br><%= [companyInfo.postal_code, companyInfo.city].filter(Boolean).join(' ') %><% if (companyInfo.country) { %><br><%= companyInfo.country %><% } %></span></li>
+                                <% } %>
+                                <% if (!companyInfo?.email && !companyInfo?.phone && !companyInfo?.mobile && !contactAddressParts.length) { %>
+                                    <li>Nog geen contactgegevens ingesteld.</li>
+                                <% } %>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <div class="contact-panel">
+                            <h2>Neem contact op</h2>
+                            <form method="post" action="/contact/send" id="contactForm" class="contact-form">
+                                <div class="row g-3">
+                                    <div class="col-12 contact-honeypot" aria-hidden="true">
+                                        <label for="contact_company_website" class="form-label">Website</label>
+                                        <input id="contact_company_website" name="company_website" type="text" class="form-control" tabindex="-1" autocomplete="off">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input id="contact_name" name="name" type="text" class="form-control" placeholder="Naam *" aria-label="Naam" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input id="contact_email" name="email" type="email" class="form-control" placeholder="E-mailadres *" aria-label="E-mailadres" required>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <input id="contact_subject" name="subject" type="text" class="form-control" placeholder="Onderwerp" aria-label="Onderwerp">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input id="contact_phone" name="phone" type="text" class="form-control" placeholder="Telefoon" aria-label="Telefoon">
+                                    </div>
+                                    <div class="col-12">
+                                        <textarea id="contact_message" name="message" rows="6" class="form-control" placeholder="Bericht *" aria-label="Bericht" required></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <input type="hidden" name="recaptcha_token" id="recaptcha_token">
+                                        <button type="submit" class="btn btn-primary">Verzenden</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="container-fluid mb-0 p-0">
+            <div class="contact-map">
+                <iframe src="https://www.google.com/maps?q=<%= encodeURIComponent(mapQuery) %>&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen title="Google Maps locatie van <%= companyInfo?.name || 'Fotohuis Venray' %>"></iframe>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <%- include('../parts/footer') %>
+    </footer>
+
+    <%- include('../parts/scripts') %>
+    <script>
+        (function () {
+            const form = document.getElementById('contactForm');
+            const tokenInput = document.getElementById('recaptcha_token');
+            const recaptchaKey = '<%= companyInfo?.recaptcha_public_key || '' %>';
+            if (!form || !tokenInput || !recaptchaKey) return;
+
+            form.addEventListener('submit', function (event) {
+                if (!window.grecaptcha) return;
+                if (tokenInput.value) return;
+
+                event.preventDefault();
+                grecaptcha.ready(function () {
+                    grecaptcha.execute(recaptchaKey, { action: 'contact' }).then(function (token) {
+                        tokenInput.value = token;
+                        form.submit();
+                    });
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

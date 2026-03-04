@@ -1,22 +1,17 @@
-function applyParallaxMobile() {
-    const banner = document.querySelector('.underbanner');
+window.addEventListener('scroll', () => {
+  const header = document.querySelector('.site-header');
+  if (header) {
+    header.classList.toggle('is-scrolled', window.scrollY > 8);
+  }
+}, { passive: true });
 
-    if (banner) {
-        function updateParallax() {
-            const scrolled = window.pageYOffset;
-            banner.style.backgroundPositionY = -(scrolled * 0.4) + 'px';
-        }
-    
-        if (window.innerWidth < 1200) {
-            window.addEventListener('scroll', updateParallax);
-        } else {
-            // Reset background position if resized to desktop
-            banner.style.backgroundPositionY = 'center';
-            window.removeEventListener('scroll', updateParallax);
-        }
-    }
-
+if (window.Fancybox) {
+  Fancybox.bind('[data-fancybox]', {
+    Thumbs: false
+  });
 }
 
-window.addEventListener('resize', applyParallaxMobile);
-window.addEventListener('load', applyParallaxMobile);
+
+window.addEventListener('DOMContentLoaded', () => {
+
+});

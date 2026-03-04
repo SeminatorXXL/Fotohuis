@@ -7,7 +7,17 @@
       /* In picker-mode we hide the sidebar for compactness */
       <% if (pickerMode) { %>
       .sidebar{ display:none !important; }
-      .content.container{ margin-left:0 !important; }
+      .content.container{
+        margin-left:0 !important;
+        max-width:100% !important;
+        padding:24px 20px !important;
+      }
+      .picker-actions form {
+        flex-wrap: nowrap;
+      }
+      .picker-actions .btn {
+        white-space: nowrap;
+      }
       
       <% } %>
     </style>
@@ -23,7 +33,7 @@
       <div class="content container">
         <h1 class="mb-3">
           <% if (pickerMode) { %>
-            <i class="fa-regular fa-images me-2"></i>Select an image
+            <i class="fa-regular fa-images me-2"></i>Selecteer een afbeelding
           <% } else { %>
             <i class="fa-regular fa-folder-open me-2"></i>Media
           <% } %>
@@ -50,18 +60,18 @@
         <!-- Placeholder for upload validation alerts -->
         <div id="uploadAlertPlaceholder" class="mb-3"></div>
 
-        <div class="d-flex flex-wrap gap-2 mb-4">
+        <div class="d-flex flex-wrap gap-2 mb-4 picker-actions">
           <form class="d-flex align-items-center gap-2" action="/cms/media/mkdir" method="post" novalidate>
             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
             <input type="hidden" name="dir" value="<%= dir %>">
             <div class="input-group">
               <span class="input-group-text"><i class="fa-regular fa-folder"></i></span>
-              <input class="form-control" type="text" name="name" placeholder="New folder name" aria-label="New folder name" required>
+              <input class="form-control" type="text" name="name" placeholder="Nieuwe mapnaam" aria-label="Nieuwe mapnaam" required>
             </div>
             <% if (!pickerMode) { %>
-              <button class="btn btn-secondary"><i class="fa-solid fa-folder-plus me-1"></i>Create folder</button>
+              <button class="btn btn-secondary text-nowrap"><i class="fa-solid fa-folder-plus me-1"></i>Map maken</button>
             <% } else { %>
-              <button class="btn btn-outline-secondary"><i class="fa-solid fa-folder-plus me-1"></i>Create folder</button>
+              <button class="btn btn-outline-secondary text-nowrap"><i class="fa-solid fa-folder-plus me-1"></i>Map maken</button>
             <% } %>
           </form>
 
@@ -69,20 +79,20 @@
             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
             <input type="hidden" name="dir" value="<%= dir %>">
             <input id="fileUploadInput" class="form-control" type="file" name="files" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.svg" aria-label="Bestanden kiezen" required>
-            <button id="uploadButton" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Upload</button>
+            <button id="uploadButton" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Uploaden</button>
           </form>
         </div>
 
         <!-- Folders -->
         <div class="mb-4">
-          <h5 class="mb-2"><i class="fa-regular fa-folder me-2"></i>Folders</h5>
+          <h5 class="mb-2"><i class="fa-regular fa-folder me-2"></i>Mappen</h5>
           <% if (folders.length === 0) { %>
-            <div class="text-muted">No folders in this directory.</div>
+            <div class="text-muted">Geen mappen in deze map.</div>
           <% } else { %>
             <div class="row g-3">
               <% folders.forEach(f => { %>
                 <div class="col-6 col-md-4 col-lg-3">
-                  <a class="folder-card text-decoration-none" href="<%= f.url %>" title="Open folder <%= f.name %>">
+                  <a class="folder-card text-decoration-none" href="<%= f.url %>" title="Map openen: <%= f.name %>">
                     <div class="card h-100 p-3 text-center">
                       <i class="fa-regular fa-folder fa-2x mb-2"></i>
                       <div class="fw-semibold text-truncate" title="<%= f.name %>"><%= f.name %></div>
@@ -97,12 +107,12 @@
 
         <!-- Files -->
         <div class="mb-2 d-flex align-items-center justify-content-between">
-          <h5 class="mb-0"><i class="fa-regular fa-file-image me-2"></i>Files</h5>
+          <h5 class="mb-0"><i class="fa-regular fa-file-image me-2"></i>Bestanden</h5>
           <div class="small text-muted"><%= files.length %> item(s)</div>
         </div>
 
         <% if (files.length === 0) { %>
-          <div class="text-muted">No files in this directory.</div>
+          <div class="text-muted">Geen bestanden in deze map.</div>
         <% } else { %>
           <div class="row g-3">
             <% files.forEach(file => { %>
@@ -120,18 +130,17 @@
                     <div class="small text-muted"><%= file.sizeKB %> KB · <%= new Date(file.modified).toLocaleDateString() %></div>
                     <div class="mt-2 d-flex gap-2">
                       <% if (pickerMode) { %>
-                        <!-- ONLY RETURNS THE FILENAME -->
-                        <button type="button" class="btn btn-sm btn-primary" onclick="selectFile('<%- file.name %>')" title="Select">
-                          <i class="fa-regular fa-circle-check me-1"></i>Select
+                        <button type="button" class="btn btn-sm btn-primary" onclick='selectFile(<%- JSON.stringify(file.publicUrl) %>)' title="Selecteren">
+                          <i class="fa-regular fa-circle-check me-1"></i>Selecteren
                         </button>
                       <% } %>
-                      <a class="btn btn-sm btn-outline-secondary" href="<%= file.publicUrl %>" target="_blank" title="Open">
+                      <a class="btn btn-sm btn-outline-secondary" href="<%= file.publicUrl %>" target="_blank" title="Openen">
                         <i class="fa-regular fa-eye"></i>
                       </a>
-                      <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#copyLinkModal" data-url="<%= file.publicUrl %>" title="Copy URL">
+                      <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#copyLinkModal" data-url="<%= file.publicUrl %>" title="URL kopieren">
                         <i class="fa-regular fa-copy"></i>
                       </button>
-                      <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteFileModal" data-filename="<%= file.name %>" title="Delete">
+                      <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteFileModal" data-filename="<%= file.name %>" title="Verwijderen">
                         <i class="fa-regular fa-trash-can"></i>
                       </button>
                     </div>
@@ -149,16 +158,16 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="copyLinkLabel">Copy File URL</h5>
+            <h5 class="modal-title" id="copyLinkLabel">Bestands-URL kopieren</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <div class="input-group">
               <span class="input-group-text"><i class="fa-regular fa-link"></i></span>
               <input id="fileUrlInput" type="text" class="form-control" readonly>
-              <button class="btn btn-primary" id="copyBtn"><i class="fa-regular fa-copy me-1"></i>Copy</button>
+              <button class="btn btn-primary" id="copyBtn"><i class="fa-regular fa-copy me-1"></i>Kopieren</button>
             </div>
-            <div class="form-text mt-2">Paste this URL into your content or form.</div>
+            <div class="form-text mt-2">Plak deze URL in je content of formulier.</div>
           </div>
         </div>
       </div>
@@ -169,19 +178,19 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="deleteFileLabel">Confirm Deletion</h5>
+            <h5 class="modal-title" id="deleteFileLabel">Verwijderen bevestigen</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p>Are you sure you want to delete the file <strong id="fileNameToDelete"></strong>? This action cannot be undone.</p>
+            <p>Weet je zeker dat je het bestand <strong id="fileNameToDelete"></strong> wilt verwijderen? Dit kan niet ongedaan worden gemaakt.</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
             <form id="deleteForm" action="/cms/media/delete" method="POST" class="d-inline">
               <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
               <input type="hidden" name="dir" value="<%= dir %>">
               <input type="hidden" id="deleteFileNameInput" name="filename">
-              <button type="submit" class="btn btn-danger">Delete</button>
+              <button type="submit" class="btn btn-danger">Verwijderen</button>
             </form>
           </div>
         </div>
@@ -189,10 +198,10 @@
     </div>
 
     <script>
-      // --- Picker communication: ONLY send back the filename
-      function selectFile(name) {
+      // --- Picker communication: send back full public path
+      function selectFile(url) {
         try {
-          window.parent.postMessage({ type: 'media-picker-select', name }, '*');
+          window.parent.postMessage({ type: 'media-picker-select', url }, '*');
         } catch (e) {}
       }
 
@@ -213,8 +222,8 @@
           input.setSelectionRange(0, 99999);
           try {
             await navigator.clipboard.writeText(input.value);
-            copyBtn.innerHTML = '<i class="fa-regular fa-circle-check me-1"></i>Copied';
-            setTimeout(()=>copyBtn.innerHTML='<i class="fa-regular fa-copy me-1"></i>Copy',1200);
+            copyBtn.innerHTML = '<i class="fa-regular fa-circle-check me-1"></i>Gekopieerd';
+            setTimeout(()=>copyBtn.innerHTML='<i class="fa-regular fa-copy me-1"></i>Kopieren',1200);
           } catch {}
         });
       }
@@ -268,14 +277,14 @@
             const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`;
 
             if (!allowedExtensions.includes(fileExtension)) {
-              showUploadError(`File type not allowed for "${file.name}". Please upload a valid image file.`);
+              showUploadError(`Bestandstype niet toegestaan voor "${file.name}". Upload een geldig afbeeldingsbestand.`);
               event.preventDefault(); // Stop form submission
               fileInput.value = ''; // Clear the selected files
               return;
             }
 
             if (file.size > maxFileSize) {
-              showUploadError(`File "${file.name}" is too large. The maximum file size is ${maxUploadSize}.`);
+              showUploadError(`Bestand "${file.name}" is te groot. De maximale bestandsgrootte is ${maxUploadSize}.`);
               event.preventDefault(); // Stop form submission
               fileInput.value = ''; // Clear the selected files
               return;
@@ -285,7 +294,7 @@
           // Disable button to prevent multiple submissions
           if (uploadButton) {
             uploadButton.disabled = true;
-            uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Uploading...';
+            uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Uploaden...';
           }
         });
       }

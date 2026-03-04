@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const db = require('../../db');
 const { isAuthenticated } = require('../auth');
 const loginProcess = require('../loginprocess');
@@ -9,12 +11,74 @@ const router = express.Router();
 router.use(loginProcess);
 
 const ADMIN_VIEWS = path.join(__dirname, '../../admin/views');
-const TBL = 'company';
+const TBL = 'company_info';
 const trim = (v) => (v ?? '').toString().trim();
+const FAV_DIR = path.join(__dirname, '../../public/images/fav');
+const MAX_FAVICON_SIZE = 2 * 1024 * 1024;
+
+if (!fs.existsSync(FAV_DIR)) {
+  fs.mkdirSync(FAV_DIR, { recursive: true });
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, FAV_DIR),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || '').toLowerCase() || '.png';
+      const safeExt = ['.png', '.ico', '.jpg', '.jpeg', '.webp', '.svg'].includes(ext) ? ext : '.png';
+      cb(null, `favicon-${Date.now()}${safeExt}`);
+    }
+  }),
+  limits: { fileSize: MAX_FAVICON_SIZE },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const allowed = ['.png', '.ico', '.jpg', '.jpeg', '.webp', '.svg'];
+    if (!allowed.includes(ext)) {
+      return cb(new Error('Alleen .png, .ico, .jpg, .jpeg, .webp en .svg zijn toegestaan voor favicon.'));
+    }
+    cb(null, true);
+  }
+});
+
+function faviconUploadMiddleware(req, res, next) {
+  upload.single('favicon_file')(req, res, (err) => {
+    if (err) {
+      req.session.errors = [{ msg: err.message || 'Favicon upload mislukt.' }];
+      return res.redirect('/cms/general');
+    }
+    next();
+  });
+}
+
+async function ensureFaviconColumn() {
+  const [rows] = await db.query("SHOW COLUMNS FROM company_info LIKE 'favicon'");
+  if (!rows.length) {
+    await db.query("ALTER TABLE company_info ADD COLUMN favicon VARCHAR(255) NULL AFTER logo");
+  }
+}
+
+async function ensureAddressColumns() {
+  const specs = [
+    { name: 'address_line_1', sql: "ALTER TABLE company_info ADD COLUMN address_line_1 VARCHAR(255) NULL AFTER phone" },
+    { name: 'address_line_2', sql: "ALTER TABLE company_info ADD COLUMN address_line_2 VARCHAR(255) NULL AFTER address_line_1" },
+    { name: 'postal_code', sql: "ALTER TABLE company_info ADD COLUMN postal_code VARCHAR(32) NULL AFTER address_line_2" },
+    { name: 'city', sql: "ALTER TABLE company_info ADD COLUMN city VARCHAR(128) NULL AFTER postal_code" },
+    { name: 'country', sql: "ALTER TABLE company_info ADD COLUMN country VARCHAR(128) NULL AFTER city" }
+  ];
+
+  for (const spec of specs) {
+    const [rows] = await db.query(`SHOW COLUMNS FROM company_info LIKE '${spec.name}'`);
+    if (!rows.length) {
+      await db.query(spec.sql);
+    }
+  }
+}
 
 // ✅ GET: altijd verse data + cache uit
 router.get('/cms/general', isAuthenticated, async (req, res) => {
   try {
+    await ensureFaviconColumn();
+    await ensureAddressColumns();
     req.app.set('views', ADMIN_VIEWS);
 
     // cache-preventie voor zekerheid
@@ -27,6 +91,7 @@ router.get('/cms/general', isAuthenticated, async (req, res) => {
 
     const [rows] = await db.query(`SELECT * FROM ${TBL} WHERE id = 1`);
     const companyInfo = rows.length ? rows[0] : {};
+    req.app.locals.companyInfo = companyInfo;
 
     const saved = req.session.saved || false;
     const errors = req.session.errors || [];
@@ -55,9 +120,15 @@ router.get('/cms/general', isAuthenticated, async (req, res) => {
 const rules = [
   body('name').trim().notEmpty().withMessage('Bedrijfsnaam is verplicht.').isLength({ max: 255 }),
   body('logo').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('favicon').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('email').trim().notEmpty().withMessage('E-mail is verplicht.').isEmail().withMessage('Ongeldig e-mailadres.').isLength({ max: 255 }),
-  body('email2').optional({ checkFalsy: true }).isEmail().withMessage('Ongeldig secundair e-mailadres.').isLength({ max: 255 }),
+  body('mobile').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('phone').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('address_line_1').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('address_line_2').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('postal_code').optional({ checkFalsy: true }).trim().isLength({ max: 32 }),
+  body('city').optional({ checkFalsy: true }).trim().isLength({ max: 128 }),
+  body('country').optional({ checkFalsy: true }).trim().isLength({ max: 128 }),
   body('coc').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('instagram').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('facebook').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
@@ -67,20 +138,33 @@ const rules = [
   body('gtm_body').optional({ checkFalsy: true }).trim(),
   body('cookie').optional({ checkFalsy: true }).trim(),
   body('recaptcha_public_key').optional({ checkFalsy: true }).trim(),
+  body('recaptcha_private_key').optional({ checkFalsy: true }).trim(),
 ];
 
-router.post('/cms/general', isAuthenticated, rules, async (req, res) => {
+router.post('/cms/general', isAuthenticated, faviconUploadMiddleware, rules, async (req, res) => {
   try {
+    await ensureFaviconColumn();
+    await ensureAddressColumns();
     req.app.set('views', ADMIN_VIEWS);
     await Promise.all(rules.map(r => r.run(req)));
     const errors = validationResult(req);
 
+    const [rows] = await db.query(`SELECT * FROM ${TBL} WHERE id = 1`);
+    const current = rows.length ? rows[0] : {};
+    const faviconPath = req.file ? `/images/fav/${req.file.filename}` : trim(req.body.favicon || current.favicon || '');
+
     const data = {
       name: trim(req.body.name),
       logo: trim(req.body.logo),
+      favicon: faviconPath,
       email: trim(req.body.email),
-      email2: trim(req.body.email2),
+      mobile: trim(req.body.mobile),
       phone: trim(req.body.phone),
+      address_line_1: trim(req.body.address_line_1),
+      address_line_2: trim(req.body.address_line_2),
+      postal_code: trim(req.body.postal_code),
+      city: trim(req.body.city),
+      country: trim(req.body.country),
       coc: trim(req.body.coc),
       instagram: trim(req.body.instagram),
       facebook: trim(req.body.facebook),
@@ -90,6 +174,7 @@ router.post('/cms/general', isAuthenticated, rules, async (req, res) => {
       gtm_body: req.body.gtm_body ?? '',
       cookie: req.body.cookie ?? '',
       recaptcha_public_key: req.body.recaptcha_public_key ?? '',
+      recaptcha_private_key: req.body.recaptcha_private_key ?? '',
     };
 
     if (!errors.isEmpty()) {
@@ -100,22 +185,24 @@ router.post('/cms/general', isAuthenticated, rules, async (req, res) => {
 
     const sql = `
       UPDATE ${TBL}
-      SET name=?, logo=?, email=?, email2=?, phone=?, coc=?, instagram=?, facebook=?, linkedin=?, tiktok=?, gtm_head=?, gtm_body=?, cookie=?, recaptcha_public_key=?
+      SET name=?, logo=?, favicon=?, email=?, mobile=?, phone=?, address_line_1=?, address_line_2=?, postal_code=?, city=?, country=?, coc=?, instagram=?, facebook=?, linkedin=?, tiktok=?, gtm_head=?, gtm_body=?, cookie=?, recaptcha_public_key=?, recaptcha_private_key=?
       WHERE id=1
     `;
     const vals = [
-      data.name, data.logo, data.email, data.email2, data.phone, data.coc,
+      data.name, data.logo, data.favicon, data.email, data.mobile, data.phone,
+      data.address_line_1, data.address_line_2, data.postal_code, data.city, data.country, data.coc,
       data.instagram, data.facebook, data.linkedin, data.tiktok,
-      data.gtm_head, data.gtm_body, data.cookie, data.recaptcha_public_key
+      data.gtm_head, data.gtm_body, data.cookie, data.recaptcha_public_key, data.recaptcha_private_key
     ];
     await db.query(sql, vals);
+    req.app.locals.companyInfo = { ...(req.app.locals.companyInfo || {}), ...data };
 
     req.session.saved = true;
 
     return res.redirect('/cms/general?ts=' + Date.now());
   } catch (err) {
     console.error('Error updating company:', err);
-    req.session.errors = [{ msg: 'Databasefout: ' + err.message }];
+    req.session.errors = [{ msg: err.message || ('Databasefout: ' + err.message) }];
     return res.redirect('/cms/general');
   }
 });

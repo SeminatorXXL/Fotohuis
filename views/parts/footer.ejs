@@ -1,5 +1,81 @@
-<div class="container-fluid">
+<% const footerLogoSrc = companyInfo?.logo ? (String(companyInfo.logo).startsWith('/') ? companyInfo.logo : '/images/' + companyInfo.logo) : '/images/fotohuisvenray-wit.png'; %>
+<% const footerMenu = Array.isArray(navItems) ? navItems : []; %>
+<% const footerQuickLinks = []; %>
+<% footerMenu.forEach(item => { %>
+    <% if (item?.path && item.path !== '#') { %>
+        <% footerQuickLinks.push({ name: item.name, path: item.path, target: item.target }); %>
+    <% } %>
+    <% if (Array.isArray(item?.children)) { %>
+        <% item.children.forEach(child => { %>
+            <% if (child?.path && child.path !== '#') { %>
+                <% footerQuickLinks.push({ name: child.name, path: child.path, target: child.target }); %>
+            <% } %>
+        <% }) %>
+    <% } %>
+<% }) %>
+
+<div class="container-fluid site-footer">
     <div class="container">
-        © 2026 - Fotohuis Venray
+        <div class="row g-4 footer-top">
+            <div class="col-lg-2">
+                <a href="/" class="footer-brand" title="<%= companyInfo?.name || 'Home' %>">
+                    <img src="<%= footerLogoSrc %>" alt="<%= companyInfo?.name || 'Logo' %>">
+                </a>
+            </div>
+
+            <div class="col-sm-6 col-lg-6">
+                <h4 class="footer-title">Links</h4>
+                <ul class="footer-links">
+                    <% if (footerQuickLinks.length) { %>
+                        <% footerQuickLinks.forEach(link => { %>
+                            <li>
+                                <a href="<%= link.path %>" <%= (link.target === '_blank') ? 'target="_blank" rel="noopener"' : '' %>><%= link.name %></a>
+                            </li>
+                        <% }) %>
+                    <% } else { %>
+                        <li><a href="/">Home</a></li>
+                    <% } %>
+                </ul>
+            </div>
+
+            <div class="col-sm-6 col-lg-4">
+                <h4 class="footer-title">Contact</h4>
+                <ul class="footer-contact">
+                    <% if (companyInfo?.email) { %>
+                        <li><i class="fa-regular fa-envelope"></i><a href="mailto:<%= companyInfo.email %>"><%= companyInfo.email %></a></li>
+                    <% } %>
+                    <% if (companyInfo?.phone) { %>
+                        <li><i class="fa-solid fa-phone"></i><a href="tel:<%= String(companyInfo.phone).replace(/\s+/g, '') %>"><%= companyInfo.phone %></a></li>
+                    <% } %>
+                    <% if (companyInfo?.mobile) { %>
+                        <li><i class="fa-solid fa-mobile-screen-button"></i><a href="tel:<%= String(companyInfo.mobile).replace(/\s+/g, '') %>"><%= companyInfo.mobile %></a></li>
+                    <% } %>
+                    <% if (companyInfo?.address_line_1 || companyInfo?.postal_code || companyInfo?.city || companyInfo?.country) { %>
+                        <li>
+                            <i class="fa-solid fa-location-dot"></i>
+                            <span>
+                                <%= [companyInfo.address_line_1, companyInfo.address_line_2].filter(Boolean).join(', ') %><br>
+                                <%= [companyInfo.postal_code, companyInfo.city].filter(Boolean).join(' ') %>
+                                <% if (companyInfo.country) { %><br><%= companyInfo.country %><% } %>
+                            </span>
+                        </li>
+                    <% } %>
+                    <% if (!companyInfo?.email && !companyInfo?.phone && !companyInfo?.mobile && !companyInfo?.address_line_1 && !companyInfo?.postal_code && !companyInfo?.city && !companyInfo?.country) { %>
+                        <li>Contactgegevens volgen binnenkort.</li>
+                    <% } %>
+                </ul>
+
+                <div class="footer-socials">
+                    <% if (companyInfo?.facebook) { %><a href="<%= companyInfo.facebook %>" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a><% } %>
+                    <% if (companyInfo?.instagram) { %><a href="<%= companyInfo.instagram %>" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a><% } %>
+                    <% if (companyInfo?.linkedin) { %><a href="<%= companyInfo.linkedin %>" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a><% } %>
+                    <% if (companyInfo?.tiktok) { %><a href="<%= companyInfo.tiktok %>" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a><% } %>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; <%= new Date().getFullYear() %> <%= companyInfo?.name || 'Fotohuis Venray' %>. Alle rechten voorbehouden.</p>
+        </div>
     </div>
 </div>

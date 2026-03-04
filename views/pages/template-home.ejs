@@ -1,49 +1,138 @@
 <!DOCTYPE html>
 <html lang="nl">
 
-    <head>
-        <%- include('../parts/header') %>
-    </head>
+<head>
+    <%- include('../parts/header') %>
+</head>
 
 <body>
 <%- companyInfo.gtm_body %>
 
-
+<main class="home-page">
+    
     <%- include('../parts/top') %>
-
-    <header>
+    
+    <header class="site-header">
         <%- include('../parts/navbar') %>
     </header>
 
-    <main>
-
-        <section>
-            <figure class="main-logo">
-                <img src="/images/<%= companyInfo.logo %>" alt="">
-                <figcaption>
-                    <h1>
-                        <%= page.name %>
-                    </h1>
-                </figcaption>
-            </figure>
-
-            <div class="main-slider swiper">
-                <div class="swiper-wrapper">
-                    <!-- Loop impressie afbeeldingen -->
+    <section class="home-hero">
+        <div class="swiper home-hero-swiper">
+            <div class="swiper-wrapper">
+                <% if (impressions && impressions.length) { %>
+                    <% impressions.forEach(impression => { %>
+                        <figure class="swiper-slide">
+                            <img src="<%= impression.path %>?w=1920&h=920" alt="<%= impression.alt || impression.name || page.name %>" width="1920" height="920">
+                        </figure>
+                    <% }) %>
+                <% } else { %>
                     <figure class="swiper-slide">
-                        <img src="" alt="">
+                        <img src="<%= page.banner || '/images/fotohuisvenray-wit.png' %>?w=1920&h=920" alt="<%= page.name %>" width="1920" height="920">
                     </figure>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="home-hero-overlay">
+            <div class="container hero-content">
+                <h1><%= page.name %></h1>
+            </div>
+        </div>
+    </section>
+
+    <section class="container-fluid">
+        <div class="container">
+            <div class="row g-4 align-items-start">
+                <div class="col-lg-6 order-2 order-lg-1">
+                    <% if (page.image_path) { %>
+                        <figure class="picture mb-0">
+                            <img src="<%= page.image_path %>?w=635&h=425" alt="<%= page.image_alt || page.name %>" class="img-fluid" width="635" height="425">
+                        </figure>
+                    <% } %>
+                </div>
+                <div class="col-lg-6 order-1 order-lg-2 align-self-center ps-lg-5">
+                    <% if (page.text) { %>
+                        <div class="content">
+                            <h2><%- page.title %></h2>
+                            <%- page.text %>
+                        </div>
+                    <% } %>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-    </main>
+    <section class="container-fluid bg-color">
+        <div class="container">
+            <h2 class="text-lg-center">Bekijk mijn expertises</h2>
+            <div class="category-list">
+                <div class="row">
+                    <% if (categories && categories.length) { %>
+                        <% categories.forEach(category => { %>
+                            <div class="col-xl-4 col-lg-6">
+                                <a href="/expertise/<%= category.alias %>" title="<%= category.name %>">
+                                    <figure class="image">
+                                        <img src="<%= category.cover || '' %>?w=440&h=440" alt="<%= category.name %>" width="440" height="440">
+                                        <figcaption>
+                                            <h3><%= category.name %></h3>
+                                        </figcaption>
+                                    </figure>
+                                </a>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="swiper-slide">
+                            <p>Er zijn nog geen categorieën beschikbaar.</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    <footer>
-        <%- include('../parts/footer') %>
-    </footer>
+    <section class="container-fluid">
+        <div class="container">
+            <h2 class="text-lg-center">Andere diensten</h2>
+            <div class="row services-grid">
+                <div class="col-md-6 col-xl-4">
+                    <a href="/fotocursus" class="service-card text-decoration-none" title="Meer over Fotocursus">
+                        <div class="service-icon">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <h3>Fotocursus</h3>
+                        <p>Leer je camera beter kennen met een praktische cursus voor beginners en gevorderden.</p>
+                    </a>
+                </div>
 
-    <%- include('../parts/scripts') %>
+                <div class="col-md-6 col-xl-4">
+                    <a href="/studio-verhuur" class="service-card text-decoration-none" title="Meer over Studio verhuur">
+                        <div class="service-icon">
+                            <i class="fa-solid fa-warehouse"></i>
+                        </div>
+                        <h3>Studio verhuur</h3>
+                        <p>Huur onze professionele studio met lichtopstelling en werk in een complete setting.</p>
+                    </a>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <a href="/pasfoto" class="service-card text-decoration-none" title="Meer over Pasfoto">
+                        <div class="service-icon">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                        <h3>Pasfoto</h3>
+                        <p>Snelle, officiële pasfoto's met correcte maatvoering voor paspoort en identiteitskaart.</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <%- include('../parts/footer') %>
+</footer>
+
+<%- include('../parts/scripts') %>
     
 </body>
 </html>

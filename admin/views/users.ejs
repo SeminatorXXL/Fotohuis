@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <%- include('parts/header') %>
-  <title>Users | <%= companyInfo?.name || 'Admin' %></title>
+  <title>Gebruikers | <%= companyInfo?.name || 'Beheer' %></title>
 </head>
 <body>
 <main class="d-flex">
@@ -14,7 +14,7 @@
     <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
       <h1 class="mb-0">
         <i class="fa-solid fa-users me-2"></i>
-        Users
+        Gebruikers
       </h1>
 
       <% const isAdmin = (typeof session !== 'undefined' && session.user && session.user.role === 'admin'); %>
@@ -32,11 +32,11 @@
       <table class="table table-hover table-striped align-middle users">
         <thead>
           <tr>
-            <th>Name</th>
+            <th>Naam</th>
             <th>E-mail</th>
-            <th>Role</th>
+            <th>Rol</th>
             <th>Status</th>
-            <th>Actions</th>
+            <th>Acties</th>
           </tr>
         </thead>
         <tbody>
@@ -45,13 +45,13 @@
               <td><%= u.name %></td>
               <td><%= u.email %></td>
               <td>
-                <span class="badge <%= u.role === 'admin' ? 'bg-danger' : 'bg-secondary' %>"><%= u.role %></span>
+                <span class="badge <%= u.role === 'admin' ? 'bg-danger' : 'bg-secondary' %>"><%= u.role === 'admin' ? 'Beheerder' : 'Gebruiker' %></span>
               </td>
               <td>
                 <% if (u.active) { %>
-                  <span class="badge bg-success">Active</span>
+                  <span class="badge bg-success">Actief</span>
                 <% } else { %>
-                  <span class="badge bg-secondary">Inactive</span>
+                  <span class="badge bg-secondary">Inactief</span>
                 <% } %>
               </td>
               <td>

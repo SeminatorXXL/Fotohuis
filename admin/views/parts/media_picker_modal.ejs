@@ -33,13 +33,14 @@
       } catch (err) {}
     });
 
-    // Ontvang selectie uit iframe (alleen bestandsnaam)
+    // Ontvang selectie uit iframe (volledig publiek pad)
     window.addEventListener('message', function (event) {
       const data = event.data || {};
-      if (data.type === 'media-picker-select' && data.name && targetInputSelector) {
+      const selectedValue = data.url || data.path || data.name || '';
+      if (data.type === 'media-picker-select' && selectedValue && targetInputSelector) {
         const input = document.querySelector(targetInputSelector);
         if (input) {
-          input.value = data.name; // uitsluitend de bestandsnaam
+          input.value = selectedValue;
           input.dispatchEvent(new Event('input', { bubbles: true }));
           input.dispatchEvent(new Event('change', { bubbles: true }));
         }

@@ -1,7 +1,8 @@
-<div class="container-fluid">
+<div class="container-fluid p-0 overflow-hidden">
     <div class="banner">
         <figure class="image">
-            <img src="<%= page.banner %>?w=2560&h=400" alt="" width="1920" height="300">
+            <% const bannerSrc = page.banner || page.cover %>
+            <img src="<%= bannerSrc %>?w=2560&h=400" alt="" width="1920" height="300">
         </figure>
         <div class="content">
             <div class="container">

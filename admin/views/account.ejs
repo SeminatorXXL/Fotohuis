@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <%- include('parts/header') %>
-  <title>Account | <%= companyInfo?.name || 'Admin' %></title>
+  <title>Account | <%= companyInfo?.name || 'Beheer' %></title>
 </head>
 <body>
 <main class="d-flex">
@@ -34,30 +34,30 @@
 
     <div class="card mb-4">
       <div class="card-body">
-        <h5 class="card-title mb-3"><i class="fa-solid fa-key me-2"></i> Change password</h5>
+        <h5 class="card-title mb-3"><i class="fa-solid fa-key me-2"></i> Wachtwoord wijzigen</h5>
         <form method="post" action="/cms/account/password" autocomplete="off" class="row g-3">
           <div class="col-12 col-md-6">
-            <label for="current_password" class="form-label">Current password</label>
+            <label for="current_password" class="form-label">Huidig wachtwoord</label>
             <input type="password" id="current_password" name="current_password" class="form-control form-control-dark" required>
           </div>
           <div class="col-12 col-md-6"></div>
 
           <div class="col-12 col-md-6">
-            <label for="new_password" class="form-label">New password</label>
+            <label for="new_password" class="form-label">Nieuw wachtwoord</label>
             <input type="password" id="new_password" name="new_password" class="form-control form-control-dark" minlength="8" required>
             <div class="form-text text-muted">
-              At least 8 chars, incl. 1 uppercase, 1 lowercase, and 1 digit.
+              Minimaal 8 tekens, met 1 hoofdletter, 1 kleine letter en 1 cijfer.
             </div>
           </div>
 
           <div class="col-12 col-md-6">
-            <label for="confirm_password" class="form-label">Confirm new password</label>
+            <label for="confirm_password" class="form-label">Bevestig nieuw wachtwoord</label>
             <input type="password" id="confirm_password" name="confirm_password" class="form-control form-control-dark" required>
           </div>
 
           <div class="col-12">
             <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-floppy-disk me-1"></i> Save new password
+              <i class="fa-solid fa-floppy-disk me-1"></i> Nieuw wachtwoord opslaan
             </button>
           </div>
         </form>

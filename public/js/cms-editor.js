@@ -17,8 +17,8 @@
           'heading', '|',
           'bold', 'italic', 'link', '|',
           'bulletedList', 'numberedList', '|',
-          'blockQuote', 'insertTable', 'mediaEmbed', '|',
-          'undo', 'redo', '|', 'sourceEditing'
+          'blockQuote', 'insertTable', '|',
+          'undo', 'redo'
         ], 
         link: {
           decorators: {

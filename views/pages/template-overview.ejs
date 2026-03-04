@@ -1,23 +1,60 @@
 <!DOCTYPE html>
 <html lang="nl">
 
-    <head>
-        <%- include('../parts/header') %>
-    </head>
+<head>
+    <%- include('../parts/header') %>
+</head>
 
 <body>
 <%- companyInfo.gtm_body %>
 
-    <%- include('../parts/top') %>
-
-    <header>
+    <header class="site-header">
+        <%- include('../parts/top') %>
         <%- include('../parts/navbar') %>
-        <%- include('../parts/banner') %>
     </header>
-
+    
     <main>
-
         
+        <%- include('../parts/banner') %>
+
+        <section class="container-fluid bg-color">
+            <div class="container">
+               <div class="content">
+                    <% if (page.title) { %>
+                        <h2><%- page.title %></h2>
+                    <% } %>
+                    <%- page.text %>
+                </div>
+            </div>
+        </section>
+
+        <section class="container-fluid ">
+            <div class="container">
+                <h2 class="text-lg-center">Bekijk mijn expertises</h2>
+                <div class="category-list">
+                    <div class="row">
+                        <% if (categories && categories.length) { %>
+                            <% categories.forEach(category => { %>
+                                <div class="col-xl-4 col-lg-6">
+                                    <a href="/expertise/<%= category.alias %>" title="<%= category.name %>">
+                                        <figure class="image">
+                                            <img src="<%= category.cover || '' %>?w=440&h=440" alt="<%= category.name %>" width="440" height="440">
+                                            <figcaption>
+                                                <h3><%= category.name %></h3>
+                                            </figcaption>
+                                        </figure>
+                                    </a>
+                                </div>
+                            <% }) %>
+                        <% } else { %>
+                            <div class="swiper-slide">
+                                <p>Er zijn nog geen categorieën beschikbaar.</p>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </section>
 
     </main>
 

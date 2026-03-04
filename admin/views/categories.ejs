@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <%- include('parts/header') %>
+</head>
+<body>
+<main class="d-flex">
+  <div class="sidebar">
+    <%- include('parts/sidebar', { session: session }) %>
+  </div>
+
+  <div class="content container">
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+      <h1 class="mb-0">Categorieen</h1>
+      <a href="/cms/categories?new=1" class="btn btn-outline-secondary">Nieuwe categorie</a>
+    </div>
+
+    <% if (saved) { %>
+      <div class="alert alert-success">Categorie opgeslagen.</div>
+    <% } %>
+
+    <% if (errors && errors.length) { %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% errors.forEach(e => { %>
+            <li><%= e.msg %></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+
+    <div class="row g-3 editor-shell">
+      <div class="col-12 col-xxl-2 col-xl-3 col-lg-4">
+        <div class="card editor-list">
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+              <% if (categories.length) { %>
+                <% categories.forEach(category => { %>
+                  <a href="/cms/categories/<%= category.id %>" class="list-group-item list-group-item-action <%= Number(categoryForm.id) === Number(category.id) ? 'active' : '' %>">
+                    <div class="fw-semibold"><%= category.name %></div>
+                    <small class="text-muted">/expertise/<%= category.alias %> · <%= category.impressions_count %> impressies</small>
+                  </a>
+                <% }) %>
+              <% } else { %>
+                <div class="list-group-item text-muted">Nog geen categorieen.</div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-xxl-10 col-xl-9 col-lg-8">
+        <div class="card editor-form">
+          <div class="card-body">
+            <h2 class="h5 mb-3"><%= editing ? 'Categorie bewerken' : 'Categorie toevoegen' %></h2>
+            <form method="post" action="<%= editing ? '/cms/categories/update/' + categoryForm.id : '/cms/categories/create' %>">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="name" class="form-label">Naam *</label>
+                  <input id="name" name="name" class="form-control" required value="<%= categoryForm.name || '' %>">
+                </div>
+                <div class="col-md-6">
+                  <label for="page_alias" class="form-label">Alias (URL)</label>
+                  <input id="page_alias" name="alias" class="form-control" placeholder="bijv. studio-opname" value="<%= categoryForm.alias || '' %>">
+                </div>
+                <div class="col-md-6">
+                  <label for="page_title" class="form-label">Google titel</label>
+                  <input id="page_title" name="google_title" class="form-control" data-company="<%= companyInfo?.name || '' %>" value="<%= categoryForm.google_title || '' %>">
+                </div>
+                <div class="col-md-6">
+                  <label for="page_description" class="form-label">Meta beschrijving</label>
+                  <input id="page_description" name="meta_description" class="form-control" value="<%= categoryForm.meta_description || '' %>">
+                </div>
+                <div class="col-12">
+                  <div class="card seo-meter-panel">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="h6 mb-0">SEO meter</h3>
+                        <span id="seo-score-badge" class="badge text-bg-secondary px-3 py-2">SEO-score: 0/100</span>
+                      </div>
+                      <div class="row g-3">
+                        <div class="col-md-4">
+                          <label for="focus_keyword" class="form-label">Focuszoekwoord</label>
+                          <input id="focus_keyword" type="text" class="form-control" placeholder="bijv. studio opname venray">
+                        </div>
+                        <div class="col-md-8">
+                          <label for="seo_title_computed" class="form-label">Berekende titelpreview</label>
+                          <input id="seo_title_computed" type="text" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="small mb-1" id="title-length">0 tekens</div>
+                          <div class="progress"><div id="title-progress" class="progress-bar" style="width:0%"></div></div>
+                          <ul id="title-tips" class="small mt-2 mb-0"></ul>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="small mb-1" id="desc-length">0 tekens</div>
+                          <div class="progress"><div id="desc-progress" class="progress-bar" style="width:0%"></div></div>
+                          <ul id="desc-tips" class="small mt-2 mb-0"></ul>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="small mb-1">Alias bevat zoekwoord</div>
+                          <span id="alias-check" class="badge text-bg-secondary">-</span>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="small mb-1">Titel start met zoekwoord</div>
+                          <span id="title-begin-check" class="badge text-bg-secondary">-</span>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="small mb-1">Leesbaarheid: <span id="readability-score">0/100</span></div>
+                          <div class="progress"><div id="readability-progress" class="progress-bar" style="width:0%"></div></div>
+                          <ul id="readability-tips" class="small mt-2 mb-0"></ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <%- include('parts/image_field_with_picker', {
+                    fieldId: 'cover',
+                    fieldName: 'cover',
+                    label: 'Cover afbeelding',
+                    value: categoryForm.cover || '',
+                    placeholder: '/media/categories/cover.jpg'
+                  }) %>
+                </div>
+                <div class="col-md-6">
+                  <%- include('parts/image_field_with_picker', {
+                    fieldId: 'banner',
+                    fieldName: 'banner',
+                    label: 'Banner afbeelding',
+                    value: categoryForm.banner || '',
+                    placeholder: '/media/categories/banner.jpg'
+                  }) %>
+                </div>
+                <div class="col-12">
+                  <label for="title" class="form-label">Titel</label>
+                  <input id="title" name="title" class="form-control" value="<%= categoryForm.title || '' %>">
+                </div>
+                <div class="col-12">
+                  <label for="text" class="form-label">SEO tekst</label>
+                  <textarea id="text" name="text" class="form-control wysiwyg" rows="10"><%= categoryForm.text || '' %></textarea>
+                </div>
+              </div>
+              <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Opslaan</button>
+              </div>
+            </form>
+
+            <% if (editing) { %>
+              <form method="post" action="/cms/categories/delete/<%= categoryForm.id %>" class="mt-2" onsubmit="return confirm('Categorie verwijderen? Bijbehorende impressies worden ook verwijderd.');">
+                <button type="submit" class="btn btn-outline-danger">Verwijder categorie</button>
+              </form>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('parts/media_picker_modal') %>
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<script src="/js/cms-editor.js"></script>
+<script src="/js/seo-meter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

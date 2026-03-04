@@ -1,45 +1,68 @@
 <!DOCTYPE html>
 <html lang="nl">
 
-    <head>
+<head>
 
-        <%- include('parts/header') %>
+    <%- include('../parts/header') %>
     
-    </head>
+</head>
 
 <body>
 <%- companyInfo.gtm_body %>
 
-    <header>
-        <%- include('parts/navbar') %>
-        <%- include('parts/banner') %>
+    <header class="site-header">
+        <%- include('../parts/top') %>
+        <%- include('../parts/navbar') %>
     </header>
-
+    
     <main>
+        <%- include('../parts/banner') %>
 
-        <section class="container-fluid">
-            
+        <section class="container-fluid bg-color">
+            <div class="container">
+                <% if (page.text) { %>
+                    <div class="content">
+                        <% if (page.title) { %>
+                            <h2><%- page.title %></h2>
+                        <% } %>
+                        <%- page.text %>
+                    </div>
+                <% } %>
+            </div>
         </section>
 
         <section class="container-fluid">
-            <div class="swiper impression">
-                <div class="swiper-wrapper">
-                    <!-- loop alle foto's -->
-                     <figure class="swiper-slide">
-                        
-                        <img src="" alt="">
-                     </figure>
+            <div class="container">
+                <h2 class="text-center">Impressies</h2>
+                <% if (impressions && impressions.length) { %>
+                <div class="impression-masonry">
+                    <% impressions.forEach(impression => { %>
+                        <a
+                            class="impression-masonry-item"
+                            href="<%= impression.path %>"
+                            data-fancybox="category-impressions"
+                            data-caption="<%= impression.name || page.name %>"
+                            title="<%= impression.name || page.name %>">
+                            <img src="<%= impression.path %>" alt="<%= impression.alt || impression.name || page.name %>" loading="lazy">
+                            <span class="impression-overlay">
+                                <span class="impression-name"><%= impression.name || page.name %></span>
+                            </span>
+                        </a>
+                    <% }) %>
                 </div>
+                <% } else { %>
+                    <p>Er zijn nog geen impressies beschikbaar.</p>
+                <% } %>
             </div>  
         </section>
 
     </main>
 
     <footer>
-        <%- include('parts/footer') %>
+        <%- include('../parts/footer') %>
     </footer>
 
-    <%- include('parts/scripts') %>
+    <%- include('../parts/scripts') %>
 
 </body>
 </html>

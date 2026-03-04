@@ -8,75 +8,37 @@
 <body>
 <%- companyInfo.gtm_body %>
 
-    <%- include('../parts/top') %>
-
-    <header>
+    <header class="site-header">
+        <%- include('../parts/top') %>
         <%- include('../parts/navbar') %>
-        <%- include('../parts/banner') %>
     </header>
-
+    
     <main>
+        <%- include('../parts/banner') %>
 
         <section class="container-fluid">
             <div class="container">
                 <div class="row">
-                    <div class="col-xl-6">
-                        <div class="content">
-                            <% if (page.name) { %>
-                            <h1><%= page.name %></h1>
-                            <% } %>
-
+                    <div class="<%= page.image_path ? 'col-xl-6' : 'col-12' %> align-self-center">
+                        <div class="content pe-lg-5">
+                            <h2><%- page.title %></h2>
                             <div class="text">
                                 <% if (page.text) { %>
                                 <%- page.text %>
                                 <% } %>
                             </div>
-
                         </div>
                     </div>
+                    <% if (page.image_path) { %>
                     <div class="col-xl-6">
                         <figure>
-                            <img src="" alt="">
+                                <img src="<%= page.image_path %>?w=660&h=440" alt="<%= page.image_alt || page.name || '' %>" width="660" height="440">
                         </figure>
                     </div>
+                    <% } %>
                 </div>
             </div>
         </section>
-
-        <section class="container-fluid">
-            <div class="container">
-                <h2>Bekijk mijn Expertises</h2>
-
-                <div class="swiper categories-swiper">
-                    <div class="swiper-wrapper">
-
-                        <% categories.forEach(category => { %>
-                            <div class="swiper-slide">
-
-                                <figure class="image">
-                                    <a href="/expertise/<%= category.alias %>"
-                                    title="Meer over <%= category.name %>?">
-
-                                        <img src="<%= category.banner %>"
-                                            alt="<%= category.name %>">
-                                    </a>
-
-                                    <figcaption>
-                                        <h3><%= category.name %></h3>
-                                    </figcaption>
-                                </figure>
-
-                            </div>
-                        <% }) %>
-
-                    </div>
-
-                    <!-- optioneel -->
-                    <div class="swiper-pagination"></div>
-                </div>
-            </div>
-        </section>
-
 
     </main>
 

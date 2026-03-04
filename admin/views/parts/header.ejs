@@ -4,11 +4,9 @@
 <!-- CMS pages should not be indexed -->
 <meta name="robots" content="noindex, nofollow" />
 
-<!-- Favicons (root-relative paths) -->
-<link rel="apple-touch-icon" sizes="180x180" href="/images/fav/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/images/fav/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/images/fav/favicon-16x16.png">
-<link rel="manifest" href="/images/fav/site.webmanifest">
+<% const faviconHref = companyInfo?.favicon || '/images/fav/favicon-32x32.png'; %>
+<link rel="icon" href="<%= faviconHref %>">
+<link rel="shortcut icon" href="<%= faviconHref %>">
 
 <title><%= typeof page_title !== 'undefined' ? page_title + ' | ' : '' %> <%= companyInfo.name %></title>
 

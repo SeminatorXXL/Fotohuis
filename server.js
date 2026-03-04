@@ -134,6 +134,10 @@ app.use(require('./workers/cms/company'));
 app.use(require('./workers/cms/redirects'));
 app.use(require('./workers/cms/users'));
 app.use(require('./workers/cms/account'));
+app.use(require('./workers/cms/pages'));
+app.use(require('./workers/cms/menu'));
+app.use(require('./workers/cms/categories'));
+app.use(require('./workers/cms/impressions'));
 
 // Public & admin routing
 app.use('/', require('./workers/web')(app));

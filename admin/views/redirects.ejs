@@ -49,13 +49,13 @@
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <% } %>
           <div class="col-md-4">
-            <label for="new_from" class="form-label">From <span class="text-danger">*</span></label>
+            <label for="new_from" class="form-label">Van <span class="text-danger">*</span></label>
             <input type="text" id="new_from" name="from" class="form-control" placeholder="/oud-pad"
                    value="<%= (typeof createDraft !== 'undefined' && createDraft.from) ? createDraft.from : '' %>" required>
             <div class="invalid-feedback">Begin met “/”.</div>
           </div>
           <div class="col-md-5">
-            <label for="new_to" class="form-label">To <span class="text-danger">*</span></label>
+            <label for="new_to" class="form-label">Naar <span class="text-danger">*</span></label>
             <input type="text" id="new_to" name="to" class="form-control" placeholder="/nieuw-pad of https://voorbeeld.nl/..."
                    value="<%= (typeof createDraft !== 'undefined' && createDraft.to) ? createDraft.to : '' %>" required>
             <div class="invalid-feedback">Vul een geldige URL of pad in.</div>
@@ -69,7 +69,7 @@
           </div>
           <div class="col-md-1 d-flex align-items-end">
             <button type="submit" class="btn btn-success w-100">
-              <i class="fa-solid fa-plus me-1"></i> Add
+              <i class="fa-solid fa-plus me-1"></i> Toevoegen
             </button>
           </div>
         </form>
