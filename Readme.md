@@ -1,59 +1,98 @@
-# PureBookings
+# Fotohuis
 
-PureBookings is a web application designed to simplify the process of booking appointments. It provides an easy-to-use interface for both service providers and customers.
+Website + CMS voor Fotohuis Venray, gebouwd met Node.js, Express, EJS en MySQL.
 
-## Features
+## Functionaliteit
 
-- User-friendly booking system
-- Calendar integration
-- Email notifications
-- Admin dashboard for managing appointments
+- Publieke website met dynamische pagina's en categorieen
+- CMS voor o.a. pagina's, menu, categorieen, impressies, redirects en algemene bedrijfsinfo
+- Dropdown menu met parent/child positie (bijv. `1` en `1.2`)
+- Contactpagina met formulier, onderwerpveld, reCAPTCHA v3 en honeypot anti-spam
+- `/sitemap` (visuele HTML sitemap) en `/sitemap.xml` (XML sitemap)
+- Favicon upload in CMS (opslag in `public/images/fav`)
 
-## Getting Started
+## Tech stack
 
-### Prerequisites
+- Node.js + Express
+- EJS templates
+- MySQL (`mysql2/promise`)
+- Multer (uploads), Sharp (image processing), Nodemailer (mail)
 
-Make sure you have the following installed:
+## Vereisten
 
-- Node.js
-- npm (Node Package Manager)
+- Node.js 18+
+- MySQL/MariaDB
+- NPM
 
-### Installation
+## Installatie
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/purebookings.git
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd purebookings
-    ```
-3. Install the dependencies:
-    ```bash
-    npm install
-    ```
+1. Installeer dependencies:
 
-### Running the Application
+```bash
+npm install
+```
 
-1. Start the development server:
-    ```bash
-    npm start
-    ```
-2. Open your browser and navigate to `http://localhost:3000` to see the application in action.
+2. Maak een database aan (standaardnaam: `fotohuis`) en importeer:
 
-## Usage
+```bash
+fotohuis.sql
+```
 
-- **Service Providers**: Log in to manage your availability and view upcoming appointments.
-- **Customers**: Browse available time slots and book appointments with ease.
+3. Maak een `.env` bestand en zet minimaal je DB en mail configuratie.
 
-## Contributing
+## Omgevingsvariabelen (voorbeeld)
 
-We welcome contributions! Please fork the repository and submit a pull request.
+```env
+PORT=3000
+USE_HTTPS=false
+BASE_URL=http://localhost:3000
 
-## License
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=
 
-This project is licensed under the MIT License.
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=mailer@example.com
+SMTP_PASS=your-password
+MAIL_FROM="Website contact <mailer@example.com>"
+```
 
-## Contact
+Optioneel voor HTTPS:
 
-For any questions or feedback, please contact us at support@purebookings.com.
+```env
+CERT_KEY_PATH=/path/to/privkey.pem
+CERT_FULLCHAIN_PATH=/path/to/fullchain.pem
+```
+
+## Starten
+
+```bash
+node server.js
+```
+
+Server draait dan standaard op `http://localhost:3000`.
+
+## Contactformulier flow
+
+1. Form post naar `POST /contact/send`
+2. Honeypot check (`company_website`) blokkeert simpele bots direct
+3. Validatie op verplichte velden (`name`, `email`, `message`)
+4. reCAPTCHA v3 verificatie (als keys zijn ingesteld in CMS)
+5. Mail verzending via SMTP (Nodemailer)
+
+Bij ontbrekende SMTP-configuratie wordt niet verstuurd, maar wel gelogd op de server.
+
+## Sitemap
+
+- `GET /sitemap` -> visuele HTML sitemap
+- `GET /sitemap.xml` -> XML sitemap
+
+## Belangrijke paden
+
+- Publieke templates: `views/pages`
+- Gedeelde onderdelen: `views/parts`
+- CMS views: `admin/views`
+- Routes/workers: `workers`
+- Styles: `public/css`
+
