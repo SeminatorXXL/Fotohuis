@@ -42,6 +42,13 @@
 .contact-list i { width: 18px; text-align: center; color: var(--primary-color);}
 .contact-list a { color: var(--text-main); text-decoration: none;}
 .contact-list a:hover { color: var(--primary-color);}
+.contact-hours-item { align-items: flex-start; }
+.contact-hours { flex: 1; min-width: 0; }
+.contact-hours-title { display: inline-block; color: var(--text-main); font-weight: 600; margin-bottom: 8px; }
+.contact-hours-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.contact-hours-list li { display: grid; grid-template-columns: minmax(105px, 1fr) auto; align-items: baseline; gap: 12px; margin: 0; }
+.contact-hours-list .day { color: var(--text-main); }
+.contact-hours-list .time { color: var(--text-muted); text-align: right; white-space: nowrap; }
 
 .contact-form .form-label { color: var(--text-main); font-family: var(--primary-font); font-size: 0.95rem;}
 .contact-form .form-control { border-radius: var(--br); border: 1px solid var(--border-color); background: rgba(13, 18, 18, 0.7); color: var(--text-main);}

@@ -6,6 +6,42 @@
 </head>
 
 <body>
+    <%
+    const defaultOpeningDays = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
+    let openingHoursRows = [];
+    try {
+        const parsed = JSON.parse(companyInfo.opening_hours || '[]');
+        if (Array.isArray(parsed)) {
+            openingHoursRows = parsed
+                .map(row => ({
+                    day: (row?.day || '').toString().trim(),
+                    open: (row?.open || '').toString().trim(),
+                    close: (row?.close || '').toString().trim()
+                }))
+                .filter(row => row.day || row.open || row.close);
+        }
+    } catch (err) {
+        openingHoursRows = (companyInfo.opening_hours || '')
+            .toString()
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(Boolean)
+            .map(line => {
+                const parts = line.split(':');
+                const day = (parts.shift() || '').toString().trim();
+                const range = parts.join(':').toString().trim();
+                if (!range || /^gesloten$/i.test(range)) {
+                    return { day, open: '', close: '' };
+                }
+                const [open, close] = range.split('-').map(v => (v || '').toString().trim());
+                return { day, open, close };
+            })
+            .filter(row => row.day || row.open || row.close);
+    }
+    if (!openingHoursRows.length) {
+        openingHoursRows = defaultOpeningDays.map(day => ({ day, open: '', close: '' }));
+    }
+    %>
     <main class="d-flex">
 
         <div class="sidebar">
@@ -94,6 +130,36 @@
                     <div class="col-md-4">
                         <label for="country" class="form-label">Land</label>
                         <input type="text" class="form-control" id="country" name="country" value="<%= companyInfo.country || '' %>">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Openingstijden</label>
+                        <div class="table-responsive opening-hours-wrap">
+                            <table class="table table-sm align-middle mb-0 opening-hours-table">
+                                <thead>
+                                    <tr>
+                                        <th>Dag</th>
+                                        <th>Open</th>
+                                        <th>Sluit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% openingHoursRows.forEach((row, idx) => { %>
+                                    <tr>
+                                        <td>
+                                            <input type="text" class="form-control opening-hours-day" name="opening_hours_day[]" value="<%= row.day %>" aria-label="Dag <%= idx + 1 %>" readonly>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control" name="opening_hours_open[]" value="<%= row.open %>" placeholder="09:00" aria-label="Open <%= idx + 1 %>">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control" name="opening_hours_close[]" value="<%= row.close %>" placeholder="18:00" aria-label="Sluit <%= idx + 1 %>">
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="form-text">Laat open/sluit leeg voor gesloten.</div>
                     </div>
                     <div class="col-md-6">
                         <label for="coc" class="form-label">KvK-nummer</label>

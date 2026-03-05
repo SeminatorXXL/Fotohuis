@@ -16,6 +16,43 @@ const contactAddressParts = [
 const mapQuery = contactAddressParts.length
   ? contactAddressParts.join(', ')
   : ((companyInfo?.name || 'Fotohuis Venray') + ' Venray');
+let openingHoursRows = [];
+const isClosedLabel = (value) => /^(gesloten|closed)$/i.test((value || '').toString().trim());
+const formatOpeningRange = (row) => {
+  const openVal = (row?.open || '').toString().trim();
+  const closeVal = (row?.close || '').toString().trim();
+  if ((isClosedLabel(openVal) && isClosedLabel(closeVal)) || (!openVal && !closeVal)) return 'Gesloten';
+  if (openVal && closeVal) return `${openVal} - ${closeVal}`;
+  if (isClosedLabel(openVal) || isClosedLabel(closeVal)) return 'Gesloten';
+  return openVal || closeVal || 'Gesloten';
+};
+try {
+  const parsedOpeningHours = JSON.parse(companyInfo?.opening_hours || '[]');
+  if (Array.isArray(parsedOpeningHours)) {
+    openingHoursRows = parsedOpeningHours
+      .map(row => ({
+        day: (row?.day || '').toString().trim(),
+        open: (row?.open || '').toString().trim(),
+        close: (row?.close || '').toString().trim()
+      }))
+      .filter(row => row.day || row.open || row.close);
+  }
+} catch (err) {
+  openingHoursRows = (companyInfo?.opening_hours || '')
+    .toString()
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const parts = line.split(':');
+      const day = (parts.shift() || '').toString().trim();
+      const range = parts.join(':').toString().trim();
+      if (!range || /^gesloten$/i.test(range)) return { day, open: '', close: '' };
+      const [open, close] = range.split('-').map(v => (v || '').toString().trim());
+      return { day, open, close };
+    })
+    .filter(row => row.day || row.open || row.close);
+}
 %>
 
     <header class="site-header">
@@ -55,7 +92,22 @@ const mapQuery = contactAddressParts.length
                                 <% if (contactAddressParts.length) { %>
                                     <li><i class="fa-solid fa-location-dot"></i><span><%= [companyInfo.address_line_1, companyInfo.address_line_2].filter(Boolean).join(', ') %><br><%= [companyInfo.postal_code, companyInfo.city].filter(Boolean).join(' ') %><% if (companyInfo.country) { %><br><%= companyInfo.country %><% } %></span></li>
                                 <% } %>
-                                <% if (!companyInfo?.email && !companyInfo?.phone && !companyInfo?.mobile && !contactAddressParts.length) { %>
+                                <% if (openingHoursRows.length) { %>
+                                    <li class="contact-hours-item">
+                                        <div class="contact-hours">
+                                            <span class="contact-hours-title">Openingstijden</span>
+                                            <ul class="contact-hours-list">
+                                                <% openingHoursRows.forEach((row) => { %>
+                                                    <li>
+                                                        <span class="day"><%= row.day || 'Onbekend' %></span>
+                                                        <span class="time"><%= formatOpeningRange(row) %></span>
+                                                    </li>
+                                                <% }) %>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                <% } %>
+                                <% if (!companyInfo?.email && !companyInfo?.phone && !companyInfo?.mobile && !contactAddressParts.length && !openingHoursRows.length) { %>
                                     <li>Nog geen contactgegevens ingesteld.</li>
                                 <% } %>
                             </ul>

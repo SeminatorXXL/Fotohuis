@@ -225,6 +225,46 @@ main.d-flex {
     box-shadow: 0 0 0 0.15rem var(--accent-color-soft);
 }
 
+/* Opening hours table in CMS General page */
+.opening-hours-wrap {
+    overflow: hidden;
+}
+
+.opening-hours-table {
+    margin-bottom: 0;
+    color: var(--white);
+    background: transparent;
+}
+
+.opening-hours-table thead th {
+    background: transparent;
+    color: var(--white);
+    border: 0;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 8px 8px;
+}
+
+.opening-hours-table td {
+    border: 0;
+    background: transparent;
+    padding: 4px;
+}
+
+.opening-hours-table .form-control {
+    min-height: 40px;
+    padding: 0.6rem 0.75rem;
+}
+
+.opening-hours-table .opening-hours-day[readonly] {
+    background: #0b0b0b;
+    border-color: #262626;
+    color: rgba(255, 255, 255, 0.86);
+    font-weight: 600;
+    cursor: default;
+}
+
 @media (max-width: 992px) {
     .sidebar {
         width: 100%;
