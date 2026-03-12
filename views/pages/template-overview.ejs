@@ -19,7 +19,7 @@
 
         <section class="container-fluid bg-color">
             <div class="container">
-               <div class="content">
+               <div class="content wow animate__fadeInLeft" data-wow-duration="0.7s">
                     <% if (page.title) { %>
                         <h2><%- page.title %></h2>
                     <% } %>
@@ -28,14 +28,14 @@
             </div>
         </section>
 
-        <section class="container-fluid ">
+        <section class="container-fluid">
             <div class="container">
-                <h2 class="text-lg-center">Bekijk mijn expertises</h2>
+                <h2 class="text-lg-center wow animate__fadeInUp" data-wow-duration="0.7s">Bekijk mijn expertises</h2>
                 <div class="category-list">
                     <div class="row">
                         <% if (categories && categories.length) { %>
-                            <% categories.forEach(category => { %>
-                                <div class="col-xl-4 col-lg-6">
+                            <% categories.forEach((category, index) => { %>
+                                <div class="col-xl-4 col-lg-6 wow animate__fadeInUp" data-wow-delay="<%= `${Math.min(index * 0.08, 0.32)}s` %>">
                                     <a href="/expertise/<%= category.alias %>" title="<%= category.name %>">
                                         <figure class="image">
                                             <img src="<%= category.cover || '' %>?w=440&h=440" alt="<%= category.name %>" width="440" height="440">

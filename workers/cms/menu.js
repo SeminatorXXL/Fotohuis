@@ -84,6 +84,27 @@ function buildMenuTree(rows) {
   return sortItems(roots);
 }
 
+function normalizeMenuOrder(items, parentId = null) {
+  const normalized = [];
+
+  items.forEach((item, index) => {
+    const id = Number(item.id);
+    if (!id) return;
+
+    normalized.push({
+      id,
+      parent_id: parentId,
+      position: index + 1
+    });
+
+    if (Array.isArray(item.children) && item.children.length) {
+      normalized.push(...normalizeMenuOrder(item.children, id));
+    }
+  });
+
+  return normalized;
+}
+
 function flattenMenu(rows) {
   const tree = buildMenuTree(rows);
   const items = [];
@@ -184,6 +205,7 @@ async function renderMenuPage(req, res, options = {}) {
   return res.status(statusCode).render('menu', {
     page_title: 'Menu',
     menuItems,
+    menuTree: buildMenuTree(menuRows),
     menuForm: {
       ...selectedForm,
       sort_order: selectedForm.sort_order || getSortOrderForItem(selectedForm, menuRows)
@@ -390,6 +412,71 @@ router.post(
       res.redirect(`/cms/menu/${payload.id}?saved=1`);
     } catch (err) {
       console.error('Error updating menu item:', err);
+      res.status(500).send('Internal Server Error');
+    }
+  }
+);
+
+router.post(
+  '/cms/menu/reorder',
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const existingRows = await getMenuRows();
+      const payloadRaw = clean(req.body.order_json);
+
+      if (!payloadRaw) {
+        return res.status(400).send('Order payload missing');
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(payloadRaw);
+      } catch {
+        return res.status(400).send('Invalid order payload');
+      }
+
+      if (!Array.isArray(payload)) {
+        return res.status(400).send('Invalid order payload');
+      }
+
+      const normalized = normalizeMenuOrder(payload);
+      const existingIds = new Set(existingRows.map((row) => row.id));
+      const normalizedIds = new Set(normalized.map((row) => row.id));
+
+      if (normalized.length !== existingRows.length || normalizedIds.size !== existingRows.length) {
+        return res.status(400).send('Incomplete menu order payload');
+      }
+
+      for (const row of normalized) {
+        if (!existingIds.has(row.id)) {
+          return res.status(400).send('Unknown menu item in order payload');
+        }
+      }
+
+      for (const row of normalized) {
+        const current = existingRows.find((item) => item.id === row.id);
+        const hasChildren = existingRows.some((item) => item.parent_id === row.id);
+
+        if (!current) {
+          return res.status(400).send('Unknown menu item in order payload');
+        }
+
+        if (row.parent_id != null && hasChildren) {
+          return res.status(422).send('Een menu-item met dropdown-items kan niet zelf in een dropdown worden geplaatst.');
+        }
+      }
+
+      for (const row of normalized) {
+        await db.query(
+          'UPDATE menu SET parent_id = ?, position = ? WHERE id = ?',
+          [row.parent_id, row.position, row.id]
+        );
+      }
+
+      res.redirect('/cms/menu?saved=1');
+    } catch (err) {
+      console.error('Error reordering menu items:', err);
       res.status(500).send('Internal Server Error');
     }
   }

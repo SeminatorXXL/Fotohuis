@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <%- include('../parts/header') %>
+</head>
+
+<body>
+<%- companyInfo.gtm_body %>
+
+    <header class="site-header">
+        <%- include('../parts/top') %>
+        <%- include('../parts/navbar') %>
+    </header>
+    
+    <main>
+        <%- include('../parts/banner') %>
+
+        <section class="container-fluid overflow-hidden">
+            <div class="container">
+                <div class="content impressions-page-intro" >
+                    <% if (page.title) { %>
+                        <h2><%- page.title %></h2>
+                    <% } %>
+                    <% if (page.text) { %>
+                        <%- page.text %>
+                    <% } %>
+                </div>
+
+                <% if (categories && categories.length) { %>
+                    <div class="impression-filters">
+                        <button class="btn btn-secondary is-active" type="button" data-filter="all">Alle impressies</button>
+                        <% categories.forEach(category => { %>
+                            <button class="btn btn-secondary" type="button" data-filter="<%= category.alias %>"><%= category.name %></button>
+                        <% }) %>
+                    </div>
+                <% } %>
+
+                <% if (impressions && impressions.length) { %>
+                    <div id="impressionFilterGrid" class="impression-masonry impression-masonry--mix">
+                        <% impressions.forEach((impression, index) => { %>
+                            <a class="impression-masonry-item impression-reveal cat-<%= impression.category_alias %>" data-category="<%= impression.category_alias %>" data-reveal-delay="<%= Math.min(index * 45, 220) %>" href="<%= impression.path %>" data-fancybox="all-impressions" data-caption="<%= impression.name || impression.category_name %>" title="<%= impression.name || impression.category_name %>">
+                                <img src="<%= impression.path %>" alt="<%= impression.alt || impression.name || impression.category_name %>" loading="lazy">
+                                <span class="impression-overlay">
+                                    <span class="impression-category"><%= impression.category_name %></span>
+                                    <span class="impression-name"><%= impression.name || impression.category_name %></span>
+                                </span>
+                            </a>
+                        <% }) %>
+                    </div>
+                    <p id="impressionEmptyState" class="impression-empty-state" hidden>Geen impressies gevonden voor dit filter.</p>
+                <% } else { %>
+                    <p>Er zijn nog geen impressies beschikbaar.</p>
+                <% } %>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <%- include('../parts/footer') %>
+    </footer>
+
+    <%- include('../parts/scripts') %>
+    <script>
+      (() => {
+        const container = document.getElementById('impressionFilterGrid');
+        const emptyState = document.getElementById('impressionEmptyState');
+        const filterButtons = [...document.querySelectorAll('.impression-filters [data-filter]')];
+        if (!container || !filterButtons.length) return;
+
+        const items = [...container.querySelectorAll('.impression-masonry-item')];
+        const revealItems = [...container.querySelectorAll('.impression-reveal')];
+
+        if ('IntersectionObserver' in window) {
+          const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              const item = entry.target;
+              const delay = Number(item.dataset.revealDelay || 0);
+              window.setTimeout(() => {
+                item.classList.add('animate__animated', 'animate__fadeInUp', 'is-revealed');
+              }, delay);
+              revealObserver.unobserve(item);
+            });
+          }, {
+            threshold: 0.12,
+            rootMargin: '0px 0px -40px 0px'
+          });
+
+          revealItems.forEach((item) => revealObserver.observe(item));
+        } else {
+          revealItems.forEach((item) => item.classList.add('animate__animated', 'animate__fadeInUp', 'is-revealed'));
+        }
+
+        function updateEmptyState() {
+          if (!emptyState) return;
+          const visibleCount = items.filter((item) => !item.classList.contains('is-hidden')).length;
+          emptyState.hidden = visibleCount !== 0;
+        }
+
+        function applyFilter(filter) {
+          container.classList.add('is-updating');
+
+          window.requestAnimationFrame(() => {
+            items.forEach((item) => {
+              const category = item.dataset.category || '';
+              const shouldShow = filter === 'all' || category === filter;
+              item.classList.toggle('is-hidden', !shouldShow);
+            });
+
+            updateEmptyState();
+            window.setTimeout(() => {
+              container.classList.remove('is-updating');
+            }, 160);
+          });
+        }
+
+        filterButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const filter = button.dataset.filter || 'all';
+            filterButtons.forEach((item) => item.classList.remove('is-active'));
+            button.classList.add('is-active');
+            applyFilter(filter);
+          });
+        });
+
+        updateEmptyState();
+      })();
+    </script>
+
+</body>
+</html>

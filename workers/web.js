@@ -27,6 +27,26 @@ const ALLOWED_TEMPLATES = fs
   .filter(f => f.endsWith('.ejs'))
   .map(f => f.replace('.ejs', ''));
 
+let homepageFlagReady;
+
+async function ensureHomepageFlagColumn() {
+  if (!homepageFlagReady) {
+    homepageFlagReady = (async () => {
+      const [rows] = await db.query("SHOW COLUMNS FROM impressions LIKE 'exclude_from_homepage'");
+      if (!rows.length) {
+        await db.query(
+          'ALTER TABLE impressions ADD COLUMN exclude_from_homepage TINYINT(1) NOT NULL DEFAULT 0 AFTER category_id'
+        );
+      }
+    })().catch((err) => {
+      homepageFlagReady = null;
+      throw err;
+    });
+  }
+
+  return homepageFlagReady;
+}
+
 function setPublicViews(req) {
   req.app.set('views', PUBLIC_VIEWS);
 }
@@ -165,6 +185,7 @@ async function getCommonData() {
  */
 router.get('/', async (req, res) => {
   try {
+    await ensureHomepageFlagColumn();
     setPublicViews(req);
 
     const [rows] = await db.query(
@@ -177,7 +198,7 @@ router.get('/', async (req, res) => {
 
     const page = rows[0];
     const [impressions] = await db.query(
-      'SELECT id, name, alt, path FROM impressions ORDER BY RAND()'
+      'SELECT id, name, alt, path FROM impressions WHERE exclude_from_homepage = 0 ORDER BY RAND()'
     );
     const common = await getCommonData();
 
@@ -322,20 +343,29 @@ router.get('/:alias', async (req, res, next) => {
     }
 
     const common = await getCommonData();
-
-    const seo = {
-      title: page.google_title || page.name,
-      description: page.meta_description || '',
-      banner: page.banner || ''
-    };
-
-    res.render(page.template, {
+    const renderData = {
       page,
-      seo,
+      seo: {
+        title: page.google_title || page.name,
+        description: page.meta_description || '',
+        banner: page.banner || ''
+      },
       contactStatus: req.query.contact || '',
       pageUrl: `${req.protocol}://${req.get('host')}${req.originalUrl}`,
       ...common
-    });
+    };
+
+    if (page.template === 'template-impressions') {
+      const [impressions] = await db.query(
+        `SELECT i.id, i.name, i.alt, i.path, i.category_id, c.name AS category_name, c.alias AS category_alias
+         FROM impressions i
+         INNER JOIN categories c ON c.id = i.category_id
+         ORDER BY i.id DESC`
+      );
+      renderData.impressions = impressions;
+    }
+
+    res.render(page.template, renderData);
   } catch (err) {
     console.error('❌ Page render error:', err);
     res.status(500).send('Internal Server Error');

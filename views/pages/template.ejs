@@ -16,7 +16,7 @@
     <main>
         <%- include('../parts/banner') %>
 
-        <section class="container-fluid">
+        <section class="container-fluid overflow-hidden">
             <div class="container">
                 <div class="row">
                     <div class="<%= page.image_path ? 'col-xl-6' : 'col-12' %> align-self-center">
@@ -32,7 +32,7 @@
                     <% if (page.image_path) { %>
                     <div class="col-xl-6">
                         <figure>
-                                <img src="<%= page.image_path %>?w=660&h=440" alt="<%= page.image_alt || page.name || '' %>" width="660" height="440">
+                            <img src="<%= page.image_path %>?w=660&h=440" alt="<%= page.image_alt || page.name || '' %>" width="660" height="440">
                         </figure>
                     </div>
                     <% } %>

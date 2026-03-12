@@ -13,5 +13,8 @@ if (window.Fancybox) {
 
 
 window.addEventListener('DOMContentLoaded', () => {
-
+  const header = document.querySelector('.site-header');
+  if (header) {
+    header.classList.toggle('is-scrolled', window.scrollY > 8);
+  }
 });

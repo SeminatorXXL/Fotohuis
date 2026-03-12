@@ -11,6 +11,30 @@ router.use(loginProcess);
 
 const ADMIN_VIEWS = path.join(__dirname, '../../admin/views');
 
+let homepageFlagReady;
+
+function normalizeHomepageFlag(value) {
+  return value ? 1 : 0;
+}
+
+async function ensureHomepageFlagColumn() {
+  if (!homepageFlagReady) {
+    homepageFlagReady = (async () => {
+      const [rows] = await db.query("SHOW COLUMNS FROM impressions LIKE 'exclude_from_homepage'");
+      if (!rows.length) {
+        await db.query(
+          'ALTER TABLE impressions ADD COLUMN exclude_from_homepage TINYINT(1) NOT NULL DEFAULT 0 AFTER category_id'
+        );
+      }
+    })().catch((err) => {
+      homepageFlagReady = null;
+      throw err;
+    });
+  }
+
+  return homepageFlagReady;
+}
+
 const impressionRules = [
   body('name').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('alt').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
@@ -23,25 +47,45 @@ async function getCompanyInfo() {
   return rows?.[0] || {};
 }
 
+async function getImpressions(categoryId = null) {
+  const params = [];
+  let sql =
+    `SELECT i.id, i.name, i.alt, i.path, i.category_id, i.exclude_from_homepage, i.created_at, c.name AS category_name, c.alias AS category_alias
+     FROM impressions i
+     INNER JOIN categories c ON c.id = i.category_id`;
+
+  if (categoryId) {
+    sql += ' WHERE i.category_id = ?';
+    params.push(categoryId);
+  }
+
+  sql += ' ORDER BY i.id DESC';
+
+  const [impressions] = await db.query(sql, params);
+  return impressions;
+}
+
+function buildFilterQuery(categoryId) {
+  return categoryId ? `?category_id=${categoryId}` : '';
+}
+
 router.get('/cms/impression', isAuthenticated, async (req, res) => {
   try {
+    await ensureHomepageFlagColumn();
     req.app.set('views', ADMIN_VIEWS);
     if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
 
+    const selectedCategoryId = Number(req.query.category_id) || null;
     const [categories] = await db.query('SELECT id, name FROM categories ORDER BY name ASC');
-    const [impressions] = await db.query(
-      `SELECT i.id, i.name, i.alt, i.path, i.category_id, i.created_at, c.name AS category_name, c.alias AS category_alias
-       FROM impressions i
-       INNER JOIN categories c ON c.id = i.category_id
-       ORDER BY i.id DESC`
-    );
+    const impressions = await getImpressions(selectedCategoryId);
     const companyInfo = await getCompanyInfo();
 
     res.render('impression', {
       page_title: 'Impressie',
       categories,
       impressions,
-      impressionForm: { id: null, name: '', alt: '', path: '', category_id: '' },
+      selectedCategoryId,
+      impressionForm: { id: null, name: '', alt: '', path: '', category_id: '', exclude_from_homepage: 0 },
       editing: false,
       errors: [],
       saved: req.query.saved === '1',
@@ -60,19 +104,16 @@ router.get(
   [param('id').isInt().toInt().withMessage('Ongeldig impressie id.')],
   async (req, res) => {
     try {
+      await ensureHomepageFlagColumn();
       req.app.set('views', ADMIN_VIEWS);
       if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
 
       const result = validationResult(req);
       if (!result.isEmpty()) return res.status(400).send('Invalid impression id');
 
+      const selectedCategoryId = Number(req.query.category_id) || null;
       const [categories] = await db.query('SELECT id, name FROM categories ORDER BY name ASC');
-      const [impressions] = await db.query(
-        `SELECT i.id, i.name, i.alt, i.path, i.category_id, i.created_at, c.name AS category_name, c.alias AS category_alias
-         FROM impressions i
-         INNER JOIN categories c ON c.id = i.category_id
-         ORDER BY i.id DESC`
-      );
+      const impressions = await getImpressions(selectedCategoryId);
       const companyInfo = await getCompanyInfo();
 
       const [[impression]] = await db.query('SELECT * FROM impressions WHERE id = ?', [req.params.id]);
@@ -82,6 +123,7 @@ router.get(
         page_title: 'Impressie',
         categories,
         impressions,
+        selectedCategoryId,
         impressionForm: impression,
         editing: true,
         errors: [],
@@ -98,24 +140,22 @@ router.get(
 
 router.post('/cms/impression/create', isAuthenticated, impressionRules, async (req, res) => {
   try {
+    await ensureHomepageFlagColumn();
     req.app.set('views', ADMIN_VIEWS);
     if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
 
+    const selectedCategoryId = Number(req.body.selected_category_id) || null;
     const result = validationResult(req);
     const payload = {
       name: clean(req.body.name),
       alt: clean(req.body.alt),
       path: clean(req.body.path),
-      category_id: Number(req.body.category_id)
+      category_id: Number(req.body.category_id),
+      exclude_from_homepage: normalizeHomepageFlag(req.body.exclude_from_homepage)
     };
 
     const [categories] = await db.query('SELECT id, name FROM categories ORDER BY name ASC');
-    const [impressions] = await db.query(
-      `SELECT i.id, i.name, i.alt, i.path, i.category_id, i.created_at, c.name AS category_name, c.alias AS category_alias
-       FROM impressions i
-       INNER JOIN categories c ON c.id = i.category_id
-       ORDER BY i.id DESC`
-    );
+    const impressions = await getImpressions(selectedCategoryId);
     const companyInfo = await getCompanyInfo();
 
     if (!result.isEmpty()) {
@@ -123,6 +163,7 @@ router.post('/cms/impression/create', isAuthenticated, impressionRules, async (r
         page_title: 'Impressie',
         categories,
         impressions,
+        selectedCategoryId,
         impressionForm: { id: null, ...payload },
         editing: false,
         errors: result.array(),
@@ -133,11 +174,12 @@ router.post('/cms/impression/create', isAuthenticated, impressionRules, async (r
     }
 
     await db.query(
-      'INSERT INTO impressions (name, alt, path, category_id) VALUES (?, ?, ?, ?)',
-      [payload.name || null, payload.alt || null, payload.path, payload.category_id]
+      'INSERT INTO impressions (name, alt, path, category_id, exclude_from_homepage) VALUES (?, ?, ?, ?, ?)',
+      [payload.name || null, payload.alt || null, payload.path, payload.category_id, payload.exclude_from_homepage]
     );
 
-    res.redirect('/cms/impression?saved=1');
+    const query = selectedCategoryId ? `?saved=1&category_id=${selectedCategoryId}` : '?saved=1';
+    res.redirect(`/cms/impression${query}`);
   } catch (err) {
     console.error('Error creating impression:', err);
     res.status(500).send('Internal Server Error');
@@ -150,25 +192,23 @@ router.post(
   [param('id').isInt().toInt().withMessage('Ongeldig impressie id.'), ...impressionRules],
   async (req, res) => {
     try {
+      await ensureHomepageFlagColumn();
       req.app.set('views', ADMIN_VIEWS);
       if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
 
+      const selectedCategoryId = Number(req.body.selected_category_id) || null;
       const result = validationResult(req);
       const payload = {
         id: Number(req.params.id),
         name: clean(req.body.name),
         alt: clean(req.body.alt),
         path: clean(req.body.path),
-        category_id: Number(req.body.category_id)
+        category_id: Number(req.body.category_id),
+        exclude_from_homepage: normalizeHomepageFlag(req.body.exclude_from_homepage)
       };
 
       const [categories] = await db.query('SELECT id, name FROM categories ORDER BY name ASC');
-      const [impressions] = await db.query(
-        `SELECT i.id, i.name, i.alt, i.path, i.category_id, i.created_at, c.name AS category_name, c.alias AS category_alias
-         FROM impressions i
-         INNER JOIN categories c ON c.id = i.category_id
-         ORDER BY i.id DESC`
-      );
+      const impressions = await getImpressions(selectedCategoryId);
       const companyInfo = await getCompanyInfo();
 
       if (!result.isEmpty()) {
@@ -176,6 +216,7 @@ router.post(
           page_title: 'Impressie',
           categories,
           impressions,
+          selectedCategoryId,
           impressionForm: payload,
           editing: true,
           errors: result.array(),
@@ -186,11 +227,12 @@ router.post(
       }
 
       await db.query(
-        'UPDATE impressions SET name = ?, alt = ?, path = ?, category_id = ? WHERE id = ?',
-        [payload.name || null, payload.alt || null, payload.path, payload.category_id, payload.id]
+        'UPDATE impressions SET name = ?, alt = ?, path = ?, category_id = ?, exclude_from_homepage = ? WHERE id = ?',
+        [payload.name || null, payload.alt || null, payload.path, payload.category_id, payload.exclude_from_homepage, payload.id]
       );
 
-      res.redirect(`/cms/impression/${payload.id}?saved=1`);
+      const query = selectedCategoryId ? `?saved=1&category_id=${selectedCategoryId}` : '?saved=1';
+      res.redirect(`/cms/impression/${payload.id}${query}`);
     } catch (err) {
       console.error('Error updating impression:', err);
       res.status(500).send('Internal Server Error');
@@ -204,11 +246,13 @@ router.post(
   [param('id').isInt().toInt().withMessage('Ongeldig impressie id.')],
   async (req, res) => {
     try {
+      const selectedCategoryId = Number(req.body.selected_category_id) || null;
       const result = validationResult(req);
       if (!result.isEmpty()) return res.status(400).send('Invalid impression id');
 
       await db.query('DELETE FROM impressions WHERE id = ?', [req.params.id]);
-      res.redirect('/cms/impression?saved=1');
+      const query = selectedCategoryId ? `?saved=1&category_id=${selectedCategoryId}` : '?saved=1';
+      res.redirect(`/cms/impression${query}`);
     } catch (err) {
       console.error('Error deleting impression:', err);
       res.status(500).send('Internal Server Error');

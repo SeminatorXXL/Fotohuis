@@ -33,23 +33,57 @@
       <div class="col-12 col-xxl-3 col-xl-4 col-lg-4">
         <div class="card editor-list">
           <div class="card-body p-0">
-            <div class="list-group list-group-flush">
-              <% if (menuItems.length) { %>
-                <% menuItems.forEach(item => { %>
-                  <a href="/cms/menu/<%= item.id %>" class="list-group-item list-group-item-action <%= Number(menuForm.id) === Number(item.id) ? 'active' : '' %>">
-                    <div class="d-flex justify-content-between gap-2">
-                      <span class="fw-semibold">
-                        <%= item.depth === 1 ? '-- ' : '' %><%= item.name %>
-                      </span>
-                      <small><%= item.display_order %></small>
+            <% if (menuTree.length) { %>
+              <div class="menu-dnd p-3">
+                <div id="menuRootList" class="menu-dropzone">
+                  <% menuTree.forEach(item => { %>
+                    <div class="menu-node" draggable="true" data-id="<%= item.id %>">
+                      <div class="menu-node-card <%= Number(menuForm.id) === Number(item.id) ? 'is-active' : '' %>">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                          <div class="d-flex align-items-start gap-2 flex-grow-1">
+                            <% if ((item.children || []).length) { %>
+                              <button type="button" class="menu-toggle btn btn-sm btn-outline-secondary" data-target="children-<%= item.id %>" aria-expanded="true" aria-label="Klap submenu in of uit">
+                                -
+                              </button>
+                            <% } else { %>
+                              <span class="menu-toggle-spacer"></span>
+                            <% } %>
+                            <a href="/cms/menu/<%= item.id %>" class="text-decoration-none flex-grow-1">
+                              <div class="fw-semibold text-dark"><%= item.name %></div>
+                              <div class="small text-muted"><%= item.path || '#' %></div>
+                            </a>
+                          </div>
+                          <span class="menu-handle" title="Sleep om te verplaatsen">::</span>
+                        </div>
+                      </div>
+                      <div class="menu-children ms-3 mt-2" id="children-<%= item.id %>">
+                        <div class="menu-dropzone child-dropzone" data-parent-id="<%= item.id %>">
+                          <% (item.children || []).forEach(child => { %>
+                            <div class="menu-node" draggable="true" data-id="<%= child.id %>">
+                              <div class="menu-node-card child-card <%= Number(menuForm.id) === Number(child.id) ? 'is-active' : '' %>">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                  <a href="/cms/menu/<%= child.id %>" class="text-decoration-none flex-grow-1">
+                                    <div class="fw-semibold text-dark"><%= child.name %></div>
+                                    <div class="small text-muted"><%= child.path || '#' %></div>
+                                  </a>
+                                  <span class="menu-handle" title="Sleep om te verplaatsen">::</span>
+                                </div>
+                              </div>
+                            </div>
+                          <% }) %>
+                        </div>
+                      </div>
                     </div>
-                    <small class="text-muted"><%= item.path || '#' %></small>
-                  </a>
-                <% }) %>
-              <% } else { %>
-                <div class="list-group-item text-muted">Nog geen menu-items.</div>
-              <% } %>
-            </div>
+                  <% }) %>
+                </div>
+                <form id="menuReorderForm" method="post" action="/cms/menu/reorder" class="mt-3">
+                  <input type="hidden" name="order_json" id="menuOrderJson">
+                  <button type="submit" class="btn btn-primary">Volgorde opslaan</button>
+                </form>
+              </div>
+            <% } else { %>
+              <div class="list-group-item text-muted">Nog geen menu-items.</div>
+            <% } %>
           </div>
         </div>
       </div>
@@ -118,5 +152,205 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+  .menu-dnd {
+    background: transparent;
+    border-radius: var(--radius-md);
+  }
+
+  .menu-dropzone {
+    display: grid;
+    gap: 10px;
+  }
+
+  .menu-node-card {
+    border: 1px solid #4c4c4c;
+    border-radius: var(--radius-md);
+    background: #2f2f2f;
+    padding: 14px 16px;
+    color: var(--white);
+  }
+
+  .menu-node-card.child-card {
+    background: #262626;
+    border-color: #3e3e3e;
+  }
+
+  .menu-node-card.is-active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 1px var(--accent-color-soft);
+  }
+
+  .menu-children.is-collapsed {
+    display: none;
+  }
+
+  .menu-children {
+    padding-left: 14px;
+    border-left: 2px solid #4c4c4c;
+  }
+
+  .menu-node.dragging {
+    opacity: 0.55;
+  }
+
+  .menu-dropzone.drag-over {
+    outline: 2px dashed var(--accent-color);
+    outline-offset: 6px;
+    border-radius: var(--radius-md);
+  }
+
+  .menu-handle {
+    cursor: grab;
+    user-select: none;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    font-weight: 700;
+    padding: 4px 0 0;
+  }
+
+  .menu-toggle {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    border-radius: 999px;
+    border-color: #7b7b7b;
+    background: transparent;
+    color: var(--white);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menu-toggle:hover,
+  .menu-toggle:focus {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background: rgba(94, 203, 255, 0.08);
+    box-shadow: none;
+  }
+
+  .menu-toggle-spacer {
+    display: inline-block;
+    width: 28px;
+    min-width: 28px;
+  }
+
+  .menu-node-card a {
+    min-width: 0;
+  }
+
+  .menu-node-card .fw-semibold {
+    font-size: 1rem;
+    line-height: 1.3;
+    color: var(--white) !important;
+  }
+
+  .menu-node-card .text-muted {
+    color: #c6c6c6 !important;
+    word-break: break-word;
+  }
+
+  @media (max-width: 767.98px) {
+    .menu-dnd {
+      padding: 0.25rem;
+    }
+
+    .menu-node-card {
+      padding: 12px 14px;
+    }
+
+    .menu-children {
+      padding-left: 10px;
+      margin-left: 6px !important;
+    }
+  }
+</style>
+<script>
+  (() => {
+    const root = document.getElementById('menuRootList');
+    const form = document.getElementById('menuReorderForm');
+    const output = document.getElementById('menuOrderJson');
+    if (!root || !form || !output) return;
+
+    let draggedNode = null;
+
+    function directChildAfterPointer(container, clientY) {
+      const items = [...container.children].filter((child) => child.classList.contains('menu-node') && child !== draggedNode);
+      return items.find((item) => clientY < item.getBoundingClientRect().top + item.offsetHeight / 2) || null;
+    }
+
+    function attachDropzoneEvents(dropzone) {
+      dropzone.addEventListener('dragover', (event) => {
+        if (!draggedNode) return;
+        event.preventDefault();
+        dropzone.classList.add('drag-over');
+
+        const target = directChildAfterPointer(dropzone, event.clientY);
+        if (!target) {
+          dropzone.appendChild(draggedNode);
+        } else {
+          dropzone.insertBefore(draggedNode, target);
+        }
+      });
+
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('drag-over');
+      });
+
+      dropzone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropzone.classList.remove('drag-over');
+      });
+    }
+
+    document.querySelectorAll('.menu-node').forEach((node) => {
+      node.addEventListener('dragstart', () => {
+        draggedNode = node;
+        node.classList.add('dragging');
+      });
+
+      node.addEventListener('dragend', () => {
+        node.classList.remove('dragging');
+        draggedNode = null;
+        document.querySelectorAll('.menu-dropzone').forEach((zone) => zone.classList.remove('drag-over'));
+      });
+    });
+
+    document.querySelectorAll('.menu-dropzone').forEach(attachDropzoneEvents);
+
+    function serializeZone(zone) {
+      return [...zone.children]
+        .filter((child) => child.classList.contains('menu-node'))
+        .map((node) => {
+          const childZone = node.querySelector(':scope > .menu-children > .menu-dropzone');
+          return {
+            id: Number(node.dataset.id),
+            children: childZone ? serializeZone(childZone) : []
+          };
+        });
+    }
+
+    form.addEventListener('submit', () => {
+      output.value = JSON.stringify(serializeZone(root));
+    });
+  })();
+
+  (() => {
+    document.querySelectorAll('.menu-toggle').forEach((button) => {
+      button.addEventListener('click', () => {
+        const targetId = button.dataset.target;
+        const target = targetId ? document.getElementById(targetId) : null;
+        if (!target) return;
+
+        const collapsed = target.classList.toggle('is-collapsed');
+        button.textContent = collapsed ? '+' : '-';
+        button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      });
+    });
+  })();
+</script>
 </body>
 </html>

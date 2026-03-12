@@ -46,6 +46,20 @@ app.set('view engine', 'ejs');
   }
 })();
 
+db.startHealthCheck(30000);
+db.subscribe(({ isHealthy }) => {
+  if (isHealthy) {
+    void (async () => {
+      try {
+        const [rows] = await db.query('SELECT * FROM company_info WHERE id = 1');
+        app.locals.companyInfo = rows[0] || {};
+      } catch (err) {
+        console.error('Company info refresh failed after reconnect:', err);
+      }
+    })();
+  }
+});
+
 /**
  * Asset cache-busting helper
  */
@@ -102,6 +116,28 @@ app.use(
 // Private static
 app.use('/private', express.static('private'));
 app.use('/cms/private', express.static('private'));
+
+app.use((req, res, next) => {
+  const acceptsHtml = req.accepts(['html', 'json', 'text']) === 'html';
+  const isOfflinePage = req.path === '/db-offline.html';
+  const isPublicAsset =
+    req.path.startsWith('/css/') ||
+    req.path.startsWith('/js/') ||
+    req.path.startsWith('/images/') ||
+    req.path.startsWith('/media/') ||
+    req.path === '/favicon.ico' ||
+    req.path === '/robots.txt';
+
+  if (db.isHealthy() || isOfflinePage || isPublicAsset) {
+    return next();
+  }
+
+  if (!acceptsHtml) {
+    return res.status(404).json({ error: 'Tijdelijke technische problemen. Probeer het later nog eens.' });
+  }
+
+  return res.status(404).sendFile(path.join(__dirname, 'public', 'db-offline.html'));
+});
 
 // Sessions
 app.use(

@@ -40,19 +40,19 @@
         </div>
     </section>
 
-    <section class="container-fluid">
+    <section class="container-fluid overflow-hidden">
         <div class="container">
             <div class="row g-4 align-items-start">
                 <div class="col-lg-6 order-2 order-lg-1">
                     <% if (page.image_path) { %>
-                        <figure class="picture mb-0">
+                        <figure class="picture mb-0 wow animate__fadeInLeft" data-wow-duration="0.7s">
                             <img src="<%= page.image_path %>?w=635&h=425" alt="<%= page.image_alt || page.name %>" class="img-fluid" width="635" height="425">
                         </figure>
                     <% } %>
                 </div>
                 <div class="col-lg-6 order-1 order-lg-2 align-self-center ps-lg-5">
                     <% if (page.text) { %>
-                        <div class="content">
+                        <div class="content wow animate__fadeInRight" data-wow-duration="0.7s" data-wow-delay="0.08s">
                             <h2><%- page.title %></h2>
                             <%- page.text %>
                         </div>
@@ -64,12 +64,12 @@
 
     <section class="container-fluid bg-color">
         <div class="container">
-            <h2 class="text-lg-center">Bekijk mijn expertises</h2>
+            <h2 class="text-lg-center wow animate__fadeInUp" data-wow-duration="0.7s">Bekijk mijn expertises</h2>
             <div class="category-list">
                 <div class="row">
                     <% if (categories && categories.length) { %>
-                        <% categories.forEach(category => { %>
-                            <div class="col-xl-4 col-lg-6">
+                        <% categories.forEach((category, index) => { %>
+                            <div class="col-xl-4 col-lg-6 wow animate__fadeInUp" data-wow-delay="<%= `${Math.min(index * 0.08, 0.32)}s` %>">
                                 <a href="/expertise/<%= category.alias %>" title="<%= category.name %>">
                                     <figure class="image">
                                         <img src="<%= category.cover || '' %>?w=440&h=440" alt="<%= category.name %>" width="440" height="440">
@@ -92,9 +92,9 @@
 
     <section class="container-fluid">
         <div class="container">
-            <h2 class="text-lg-center">Andere diensten</h2>
+            <h2 class="text-lg-center wow animate__fadeInUp" data-wow-duration="0.7s">Andere diensten</h2>
             <div class="row services-grid">
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 wow animate__fadeInUp" data-wow-delay="0s">
                     <a href="/fotocursus" class="service-card text-decoration-none" title="Meer over Fotocursus">
                         <div class="service-icon">
                             <i class="fa-solid fa-camera"></i>
@@ -104,7 +104,7 @@
                     </a>
                 </div>
 
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 wow animate__fadeInUp" data-wow-delay="0.08s">
                     <a href="/studio-verhuur" class="service-card text-decoration-none" title="Meer over Studio verhuur">
                         <div class="service-icon">
                             <i class="fa-solid fa-warehouse"></i>
@@ -114,7 +114,7 @@
                     </a>
                 </div>
 
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 wow animate__fadeInUp" data-wow-delay="0.16s">
                     <a href="/pasfoto" class="service-card text-decoration-none" title="Meer over Pasfoto">
                         <div class="service-icon">
                             <i class="fa-solid fa-id-card"></i>

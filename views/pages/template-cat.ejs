@@ -33,12 +33,13 @@
 
         <section class="container-fluid">
             <div class="container">
-                <h2 class="text-center">Impressies</h2>
+                <h2 class="text-center wow animate__fadeInUp" data-wow-duration="0.7s">Impressies</h2>
                 <% if (impressions && impressions.length) { %>
                 <div class="impression-masonry">
-                    <% impressions.forEach(impression => { %>
+                    <% impressions.forEach((impression, index) => { %>
                         <a
-                            class="impression-masonry-item"
+                            class="impression-masonry-item wow animate__fadeInUp"
+                            data-wow-delay="<%= `${Math.min(index * 0.05, 0.3)}s` %>"
                             href="<%= impression.path %>"
                             data-fancybox="category-impressions"
                             data-caption="<%= impression.name || page.name %>"

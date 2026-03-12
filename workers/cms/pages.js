@@ -11,7 +11,7 @@ router.use(loginProcess);
 
 const ADMIN_VIEWS = path.join(__dirname, '../../admin/views');
 
-const allowedTemplates = ['template', 'template-home', 'template-overview', 'template-cat', 'template-contact'];
+const allowedTemplates = ['template', 'template-home', 'template-overview', 'template-cat', 'template-contact', 'template-impressions'];
 const slugify = (value = '') =>
   value
     .toString()

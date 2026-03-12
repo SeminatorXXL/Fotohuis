@@ -103,6 +103,7 @@ CREATE TABLE `impressions` (
   `alt` varchar(255) DEFAULT NULL,
   `path` varchar(255) NOT NULL,
   `category_id` int(10) UNSIGNED NOT NULL,
+  `exclude_from_homepage` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -110,12 +111,12 @@ CREATE TABLE `impressions` (
 -- Gegevens worden geëxporteerd voor tabel `impressions`
 --
 
-INSERT INTO `impressions` (`id`, `name`, `alt`, `path`, `category_id`, `created_at`) VALUES
-(1, 'Test bf1', 'test', '/media/bedrijfsfotografie/flag-banner.jpg', 4, '2026-02-27 13:25:04'),
-(2, 'Test bf2', 'test', '/media/bedrijfsfotografie/focus-banner.jpg', 4, '2026-02-27 13:25:24'),
-(3, 'foto 3', '3', '/media/bedrijfsfotografie/IMG_0183.JPG', 4, '2026-03-04 21:40:23'),
-(4, '4', '4', '/media/bedrijfsfotografie/bmberjck_rebirth.jpg', 4, '2026-03-04 21:58:15'),
-(5, '5', '5', '/media/bedrijfsfotografie/anderex-fantasm.jpg', 4, '2026-03-04 21:58:24');
+INSERT INTO `impressions` (`id`, `name`, `alt`, `path`, `category_id`, `exclude_from_homepage`, `created_at`) VALUES
+(1, 'Test bf1', 'test', '/media/bedrijfsfotografie/flag-banner.jpg', 4, 0, '2026-02-27 13:25:04'),
+(2, 'Test bf2', 'test', '/media/bedrijfsfotografie/focus-banner.jpg', 4, 0, '2026-02-27 13:25:24'),
+(3, 'foto 3', '3', '/media/bedrijfsfotografie/IMG_0183.JPG', 4, 0, '2026-03-04 21:40:23'),
+(4, '4', '4', '/media/bedrijfsfotografie/bmberjck_rebirth.jpg', 4, 0, '2026-03-04 21:58:15'),
+(5, '5', '5', '/media/bedrijfsfotografie/anderex-fantasm.jpg', 4, 0, '2026-03-04 21:58:24');
 
 -- --------------------------------------------------------
 

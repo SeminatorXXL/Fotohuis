@@ -33,6 +33,7 @@
       <div class="card-body">
         <h2 class="h5 mb-3"><%= editing ? 'Impressie bewerken' : 'Impressie toevoegen' %></h2>
         <form method="post" action="<%= editing ? '/cms/impression/update/' + impressionForm.id : '/cms/impression/create' %>">
+          <input type="hidden" name="selected_category_id" value="<%= selectedCategoryId || '' %>">
           <div class="row g-3">
             <div class="col-md-6">
               <label for="name" class="form-label">Naam</label>
@@ -60,11 +61,17 @@
                 <% }) %>
               </select>
             </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input id="exclude_from_homepage" name="exclude_from_homepage" class="form-check-input" type="checkbox" value="1" <%= Number(impressionForm.exclude_from_homepage) === 1 ? 'checked' : '' %>>
+                <label for="exclude_from_homepage" class="form-check-label">Uitsluiten van homepage</label>
+              </div>
+            </div>
           </div>
           <div class="mt-3 d-flex gap-2">
             <button type="submit" class="btn btn-primary">Opslaan</button>
             <% if (editing) { %>
-              <a href="/cms/impression" class="btn btn-outline-secondary">Annuleren</a>
+              <a href="/cms/impression<%= selectedCategoryId ? '?category_id=' + selectedCategoryId : '' %>" class="btn btn-outline-secondary">Annuleren</a>
             <% } %>
           </div>
         </form>
@@ -73,7 +80,21 @@
 
     <div class="card">
       <div class="card-body">
-        <h2 class="h5 mb-3">Bestaande impressies</h2>
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap">
+          <h2 class="h5 mb-0">Bestaande impressies</h2>
+          <form method="get" action="/cms/impression" class="d-flex gap-2 align-items-center flex-nowrap">
+            <label for="filter_category_id" class="form-label mb-0 text-nowrap">Filter categorie</label>
+            <select id="filter_category_id" name="category_id" class="form-select">
+              <option value="">Alle categorieen</option>
+              <% categories.forEach(category => { %>
+                <option value="<%= category.id %>" <%= Number(selectedCategoryId) === Number(category.id) ? 'selected' : '' %>><%= category.name %></option>
+              <% }) %>
+            </select>
+            <% if (selectedCategoryId) { %>
+              <a href="/cms/impression" class="btn btn-outline-light border">Reset</a>
+            <% } %>
+          </form>
+        </div>
         <div class="table-responsive">
           <table class="table align-middle">
             <thead>
@@ -81,6 +102,7 @@
                 <th>Preview</th>
                 <th>Naam</th>
                 <th>Categorie</th>
+                <th>Homepage</th>
                 <th class="text-end">Acties</th>
               </tr>
             </thead>
@@ -94,9 +116,11 @@
                   </td>
                   <td><%= impression.name || '-' %></td>
                   <td><%= impression.category_name %></td>
+                  <td><%= Number(impression.exclude_from_homepage) === 1 ? 'Verborgen' : 'Zichtbaar' %></td>
                   <td class="text-end">
-                    <a href="/cms/impression/<%= impression.id %>" class="btn btn-sm btn-outline-primary">Bewerk</a>
+                    <a href="/cms/impression/<%= impression.id %><%= selectedCategoryId ? '?category_id=' + selectedCategoryId : '' %>" class="btn btn-sm btn-outline-primary">Bewerk</a>
                     <form method="post" action="/cms/impression/delete/<%= impression.id %>" class="d-inline" onsubmit="return confirm('Impressie verwijderen?');">
+                      <input type="hidden" name="selected_category_id" value="<%= selectedCategoryId || '' %>">
                       <button type="submit" class="btn btn-sm btn-outline-danger">Verwijder</button>
                     </form>
                   </td>
@@ -104,7 +128,7 @@
               <% }) %>
               <% if (!impressions.length) { %>
                 <tr>
-                  <td colspan="4" class="text-muted">Nog geen impressies.</td>
+                  <td colspan="5" class="text-muted">Nog geen impressies.</td>
                 </tr>
               <% } %>
             </tbody>
@@ -117,5 +141,14 @@
 
 <%- include('parts/media_picker_modal') %>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  (() => {
+    const categoryFilter = document.getElementById('filter_category_id');
+    if (!categoryFilter || !categoryFilter.form) return;
+    categoryFilter.addEventListener('change', () => {
+      categoryFilter.form.submit();
+    });
+  })();
+</script>
 </body>
 </html>
