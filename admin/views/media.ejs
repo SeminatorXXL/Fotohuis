@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <%- include('parts/header') %>
-    <link rel="stylesheet" href="/private/media-manager.css">
+    <link rel="stylesheet" href="<%= versionAsset('/private/media-manager.css') %>">
     <style>
       /* In picker-mode we hide the sidebar for compactness */
       <% if (pickerMode) { %>
@@ -78,9 +78,12 @@
           <form id="uploadForm" class="d-flex align-items-center gap-2" action="/cms/media/upload" method="post" enctype="multipart/form-data">
             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
             <input type="hidden" name="dir" value="<%= dir %>">
-            <input id="fileUploadInput" class="form-control" type="file" name="files" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.svg" aria-label="Bestanden kiezen" required>
+            <input id="fileUploadInput" class="form-control" type="file" name="files" multiple accept="<%= uploadAcceptAttr %>" aria-label="Bestanden kiezen" required>
             <button id="uploadButton" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Uploaden</button>
           </form>
+        </div>
+        <div class="small text-muted mb-4">
+          Toegestane extensies: <%= allowedUploadExtensions %>. Maximale uploadgrootte: <%= maxUploadSize %>.
         </div>
 
         <!-- Folders -->
@@ -256,17 +259,20 @@
       if (uploadForm) {
         uploadForm.addEventListener('submit', function(event) {
           const fileInput = document.getElementById('fileUploadInput');
-          // Use server-provided max size, default to 5MB if not provided
           const maxUploadSize = '<%- maxUploadSize || "5mb" %>';
-          const sizeInMB = parseFloat(maxUploadSize);
-          let maxFileSize = 5 * 1024 * 1024; // Default
-          if (!isNaN(sizeInMB)) {
-            if (maxUploadSize.toLowerCase().includes('mb')) {
-              maxFileSize = sizeInMB * 1024 * 1024;
-            }
+          const sizeMatch = String(maxUploadSize).trim().toLowerCase().match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/);
+          let maxFileSize = 5 * 1024 * 1024;
+          if (sizeMatch) {
+            const value = Number(sizeMatch[1]);
+            const unit = sizeMatch[2] || 'b';
+            const factors = { b: 1, kb: 1024, mb: 1024 * 1024, gb: 1024 * 1024 * 1024 };
+            maxFileSize = value * (factors[unit] || 1);
           }
 
-          const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
+          const allowedExtensions = '<%- uploadAcceptAttr || ".jpg,.jpeg,.png,.webp,.gif,.svg" %>'
+            .split(',')
+            .map((entry) => entry.trim().toLowerCase())
+            .filter(Boolean);
           const uploadButton = document.getElementById('uploadButton');
 
           // Clear previous alerts

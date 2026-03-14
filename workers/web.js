@@ -4,6 +4,7 @@ const fs      = require('fs');
 const db      = require('../db');
 const axios   = require('axios');
 const nodemailer = require('nodemailer');
+const { decryptSecret } = require('../lib/secret_crypto');
 
 const { isAuthenticated } = require('./auth');
 const loginProcess = require('./loginprocess');
@@ -69,13 +70,35 @@ function safeInternalBackUrl(req, fallback = '/contact') {
 }
 
 async function sendContactMail({ companyInfo, payload }) {
-  const host = process.env.SMTP_HOST || process.env.MAIL_HOST;
-  const port = Number(process.env.SMTP_PORT || process.env.MAIL_PORT || 587);
-  const user = process.env.SMTP_USER || process.env.MAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.MAIL_PASS;
+  const host = String(companyInfo?.smtp_host || process.env.SMTP_HOST || process.env.MAIL_HOST || '').trim();
+  const port = Number(companyInfo?.smtp_port || process.env.SMTP_PORT || process.env.MAIL_PORT || 587);
+  const user = String(companyInfo?.smtp_user || process.env.SMTP_USER || process.env.MAIL_USER || '').trim();
+  const rawPass = companyInfo?.smtp_pass || process.env.SMTP_PASS || process.env.MAIL_PASS || '';
+  const pass = String(decryptSecret(rawPass)).trim();
+  const configSource = {
+    host: companyInfo?.smtp_host ? 'db' : ((process.env.SMTP_HOST || process.env.MAIL_HOST) ? 'env' : 'missing'),
+    port: companyInfo?.smtp_port ? 'db' : ((process.env.SMTP_PORT || process.env.MAIL_PORT) ? 'env' : 'default'),
+    user: companyInfo?.smtp_user ? 'db' : ((process.env.SMTP_USER || process.env.MAIL_USER) ? 'env' : 'missing'),
+    pass: companyInfo?.smtp_pass ? 'db' : ((process.env.SMTP_PASS || process.env.MAIL_PASS) ? 'env' : 'missing')
+  };
+
+  console.log('[mail] preparing transport', {
+    host: host || '<missing>',
+    port,
+    secure: port === 465,
+    user: user ? '<set>' : '<missing>',
+    pass: pass ? '<set>' : '<missing>',
+    configSource
+  });
 
   if (!host || !user || !pass) {
-    console.log('Contact form received (no SMTP configured):', payload);
+    console.log('[mail] skipped send, incomplete SMTP config', {
+      payload: {
+        name: payload?.name || '',
+        email: payload?.email || '',
+        subject: payload?.subject || ''
+      }
+    });
     return;
   }
 
@@ -87,7 +110,7 @@ async function sendContactMail({ companyInfo, payload }) {
   });
 
   const to = companyInfo?.email || user;
-  const from = process.env.MAIL_FROM || `"Website contact" <${user}>`;
+  const from = String(companyInfo?.mail_from || process.env.MAIL_FROM || `"Website contact" <${user}>`).trim();
   const subjectSuffix = payload.subject ? ` - ${payload.subject}` : '';
   const subject = `Nieuw contactbericht - ${companyInfo?.name || 'Website'}${subjectSuffix}`;
   const text = [
@@ -100,12 +123,27 @@ async function sendContactMail({ companyInfo, payload }) {
     payload.message
   ].join('\n');
 
-  await transporter.sendMail({
+  console.log('[mail] sending message', {
+    to,
+    from,
+    subject,
+    replyTo: payload.email,
+    messageLength: text.length
+  });
+
+  const info = await transporter.sendMail({
     to,
     from,
     replyTo: payload.email,
     subject,
     text
+  });
+
+  console.log('[mail] send success', {
+    messageId: info.messageId,
+    accepted: info.accepted,
+    rejected: info.rejected,
+    response: info.response
   });
 }
 
@@ -271,8 +309,18 @@ router.post('/contact/send', async (req, res) => {
     const backUrl = safeInternalBackUrl(req, '/contact');
     const honeypot = String(req.body.company_website || '').trim();
 
+    console.log('[contact] incoming submission', {
+      backUrl,
+      hasHoneypot: Boolean(honeypot),
+      hasRecaptchaToken: Boolean(String(req.body.recaptcha_token || '').trim()),
+      name: String(req.body.name || '').trim(),
+      email: String(req.body.email || '').trim(),
+      subject: String(req.body.subject || '').trim()
+    });
+
     // Spam bot trap: if this hidden field is filled, stop processing immediately.
     if (honeypot) {
+      console.log('[contact] honeypot triggered, skipping send');
       return res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}contact=ok`);
     }
 
@@ -289,11 +337,13 @@ router.post('/contact/send', async (req, res) => {
     };
 
     if (!payload.name || !payload.email || !payload.message) {
+      console.log('[contact] invalid submission, missing required fields');
       return res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}contact=invalid`);
     }
 
     const privateKey = String(companyInfo.recaptcha_private_key || '').trim();
     if (privateKey && payload.recaptchaToken) {
+      console.log('[contact] verifying recaptcha');
       const params = new URLSearchParams();
       params.append('secret', privateKey);
       params.append('response', payload.recaptchaToken);
@@ -305,14 +355,18 @@ router.post('/contact/send', async (req, res) => {
       );
 
       if (!verifyResponse?.data?.success) {
+        console.log('[contact] recaptcha failed', verifyResponse?.data || {});
         return res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}contact=error`);
       }
+
+      console.log('[contact] recaptcha passed');
     }
 
     await sendContactMail({ companyInfo, payload });
+    console.log('[contact] submission processed successfully');
     return res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}contact=ok`);
   } catch (err) {
-    console.error('Contact form error:', err);
+    console.error('[contact] form error:', err);
     const backUrl = safeInternalBackUrl(req, '/contact');
     return res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}contact=error`);
   }

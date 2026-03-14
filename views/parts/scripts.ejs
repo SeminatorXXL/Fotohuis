@@ -1,12 +1,28 @@
+<%
+  let externalScripts = [];
+  try {
+    const parsedExternalScripts = JSON.parse(companyInfo?.external_scripts || '[]');
+    if (Array.isArray(parsedExternalScripts)) {
+      externalScripts = parsedExternalScripts
+        .map((entry) => (entry ?? '').toString().trim())
+        .filter(Boolean);
+    }
+  } catch (err) {
+    externalScripts = [];
+  }
+%>
 <script src="https://www.google.com/recaptcha/api.js?render=<%= companyInfo.recaptcha_public_key %>"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1/dist/fancybox/fancybox.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/wowjs@1.1.3/dist/wow.min.js"></script>
+<% externalScripts.forEach((scriptEntry) => { %>
+<%- scriptEntry %>
+<% }) %>
 
-<script src="/js/scripts.js"></script>
-<script src="/js/sliders.js"></script>
+<script src="<%= versionAsset('/js/scripts.js') %>"></script>
+<script src="<%= versionAsset('/js/sliders.js') %>"></script>
 <script>
   if (typeof WOW === 'function') {
     new WOW({

@@ -38,10 +38,26 @@
             })
             .filter(row => row.day || row.open || row.close);
     }
-    if (!openingHoursRows.length) {
-        openingHoursRows = defaultOpeningDays.map(day => ({ day, open: '', close: '' }));
-    }
-    %>
+	    if (!openingHoursRows.length) {
+	        openingHoursRows = defaultOpeningDays.map(day => ({ day, open: '', close: '' }));
+	    }
+        let externalScriptsRows = [];
+        try {
+            const parsedExternalScripts = JSON.parse(companyInfo.external_scripts || '[]');
+            externalScriptsRows = Array.isArray(parsedExternalScripts)
+                ? parsedExternalScripts.map(entry => (entry || '').toString()).filter(entry => entry.trim())
+                : [];
+        } catch (err) {
+            externalScriptsRows = (companyInfo.external_scripts || '')
+                .toString()
+                .split(/\n\s*\n/)
+                .map(block => block.trim())
+                .filter(Boolean);
+        }
+        if (!externalScriptsRows.length) {
+            externalScriptsRows = [''];
+        }
+	    %>
     <main class="d-flex">
 
         <div class="sidebar">
@@ -66,7 +82,7 @@
             </div>
             <% } %>
 
-            <form method="post" action="/cms/general" enctype="multipart/form-data" class="needs-validation" novalidate>
+            <form method="post" action="/cms/general" enctype="multipart/form-data" class="needs-validation" novalidate id="companyInfoForm">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label for="name" class="form-label">Bedrijfsnaam</label>
@@ -132,6 +148,11 @@
                         <input type="text" class="form-control" id="country" name="country" value="<%= companyInfo.country || '' %>">
                     </div>
                     <div class="col-12">
+                        <label for="site_url" class="form-label">Website URL</label>
+                        <input type="url" class="form-control" id="site_url" name="site_url" value="<%= companyInfo.site_url || '' %>" placeholder="https://www.fotohuisvenray.nl">
+                        <div class="form-text">Gebruik de volledige URL inclusief `https://`.</div>
+                    </div>
+                    <div class="col-12">
                         <label class="form-label">Openingstijden</label>
                         <div class="table-responsive opening-hours-wrap">
                             <table class="table table-sm align-middle mb-0 opening-hours-table">
@@ -186,6 +207,49 @@
                 </div>
 
                 <hr class="my-4">
+                <h4>Mail / SMTP</h4>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="smtp_host" class="form-label">SMTP host</label>
+                        <input type="text" class="form-control" id="smtp_host" name="smtp_host" value="<%= companyInfo.smtp_host || '' %>" placeholder="smtp.hostinger.com">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="smtp_port" class="form-label">SMTP poort</label>
+                        <input type="number" class="form-control" id="smtp_port" name="smtp_port" value="<%= companyInfo.smtp_port || '' %>" min="1" max="65535" placeholder="587">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="mail_from" class="form-label">Van-afzender</label>
+                        <input type="text" class="form-control" id="mail_from" name="mail_from" value="<%= companyInfo.mail_from || '' %>" placeholder="Website contact <info@domein.nl>">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="smtp_user" class="form-label">SMTP gebruiker</label>
+                        <input type="text" class="form-control" id="smtp_user" name="smtp_user" value="<%= companyInfo.smtp_user || '' %>" placeholder="info@domein.nl">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="smtp_pass" class="form-label">SMTP wachtwoord</label>
+                        <input type="password" class="form-control" id="smtp_pass" name="smtp_pass" value="<%= companyInfo.smtp_pass || '' %>" placeholder="<%= smtpPassConfigured ? 'Laat leeg om het huidige wachtwoord te behouden' : 'Voer een SMTP wachtwoord in' %>">
+                        <div class="form-text">
+                            <%= smtpPassConfigured ? 'Er is al een SMTP wachtwoord opgeslagen. Laat dit veld leeg om het bestaande wachtwoord te behouden.' : 'Dit wachtwoord wordt versleuteld opgeslagen in de database.' %>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <h4>Media uploads</h4>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="upload_allowed_ext" class="form-label">Toegestane extensies</label>
+                        <input type="text" class="form-control" id="upload_allowed_ext" name="upload_allowed_ext" value="<%= companyInfo.upload_allowed_ext || '' %>" placeholder="jpg,jpeg,png,webp,gif,svg">
+                        <div class="form-text">Komma-gescheiden lijst zonder punt.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="upload_max_size" class="form-label">Max uploadgrootte</label>
+                        <input type="text" class="form-control" id="upload_max_size" name="upload_max_size" value="<%= companyInfo.upload_max_size || '' %>" placeholder="10mb">
+                        <div class="form-text">Ondersteunt bijvoorbeeld `5mb`, `10mb` of `500kb`.</div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
                 <h4>Google Tag Manager</h4>
                 <div class="row g-3">
                     <div class="col-12">
@@ -205,15 +269,35 @@
                         <div class="form-text">Noscript dat direct na de &lt;body&gt;-tag wordt geplaatst.</div>
                     </div>
 
-                    <div class="col-12">
-                        <label for="cookie" class="form-label">Cookie-script</label>
-                        <div class="code-block">
-                        <textarea class="form-control code-input" id="cookie" name="cookie" rows="1" placeholder="Plak hier je cookie-script"><%= companyInfo.cookie || '' %></textarea>
-                        </div>
-                    </div>
+	                    <div class="col-12">
+	                        <label for="cookie" class="form-label">Cookie-script</label>
+	                        <div class="code-block">
+	                        <textarea class="form-control code-input" id="cookie" name="cookie" rows="1" placeholder="Plak hier je cookie-script"><%= companyInfo.cookie || '' %></textarea>
+	                        </div>
+	                    </div>
 
-                    <div class="col-12">
-                        <label for="recaptcha_public_key" class="form-label">reCAPTCHA publieke sleutel (V3)</label>
+	                    <div class="col-12">
+		                        <label class="form-label">Extra scripts</label>
+		                        <div class="border rounded p-3" id="externalScriptsManager">
+	                                <input type="hidden" name="external_scripts" id="externalScriptsJson" value="<%- JSON.stringify(externalScriptsRows.filter(Boolean)) %>">
+		                            <div class="d-grid gap-2" id="externalScriptsList">
+		                                <% externalScriptsRows.forEach((scriptEntry, index) => { %>
+		                                <div class="external-script-row border rounded p-3">
+                                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+		                                        <span class="fw-semibold external-script-label">Script <%= index + 1 %></span>
+		                                        <button type="button" class="btn btn-outline-danger btn-sm external-script-remove" <%= externalScriptsRows.length === 1 ? 'disabled' : '' %>>Verwijderen</button>
+                                            </div>
+                                    <textarea class="form-control" name="external_scripts_entry[]" rows="5" placeholder="<script src=&quot;https://static.salonized.com/widget.js&quot;><\/script>&#10;of&#10;console.log('Hallo');"><%= scriptEntry %></textarea>
+		                                </div>
+		                                <% }) %>
+		                            </div>
+		                            <button type="button" class="btn btn-outline-secondary mt-3" id="addExternalScriptButton">Script toevoegen</button>
+		                        </div>
+		                        <div class="form-text">Voeg hier losse JavaScript-code of complete `<script ...></script>` tags toe. Deze worden tussen WOW.js en de custom scripts geladen.</div>
+		                    </div>
+
+	                    <div class="col-12">
+	                        <label for="recaptcha_public_key" class="form-label">reCAPTCHA publieke sleutel (V3)</label>
                         <input type="text" class="form-control" id="recaptcha_public_key" name="recaptcha_public_key" value="<%= companyInfo.recaptcha_public_key %>">
                     </div>
 
@@ -234,7 +318,84 @@
         </div>
     </main>
 
-    <%- include('parts/media_picker_modal') %>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+	    <%- include('parts/media_picker_modal') %>
+	        <script>
+	            (function () {
+                    const form = document.getElementById('companyInfoForm');
+	                const list = document.getElementById('externalScriptsList');
+	                const addButton = document.getElementById('addExternalScriptButton');
+                    const hiddenInput = document.getElementById('externalScriptsJson');
+	                if (!form || !list || !addButton || !hiddenInput) return;
+
+                    function syncHiddenInput() {
+                        const entries = [...list.querySelectorAll('textarea[name="external_scripts_entry[]"]')]
+                            .map((input) => input.value.trim())
+                            .filter(Boolean);
+                        hiddenInput.value = JSON.stringify(entries);
+                    }
+
+	                function updateRemoveButtons() {
+	                    const rows = list.querySelectorAll('.external-script-row');
+	                    rows.forEach((row, index) => {
+	                        const label = row.querySelector('.external-script-label');
+	                        const removeButton = row.querySelector('.external-script-remove');
+                        if (label) label.textContent = `Script ${index + 1}`;
+                        if (removeButton) removeButton.disabled = rows.length === 1;
+                    });
+                }
+
+                function createRow(value = '') {
+                    const row = document.createElement('div');
+                    row.className = 'external-script-row border rounded p-3';
+                    row.innerHTML = `
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                            <span class="fw-semibold external-script-label">Script</span>
+                            <button type="button" class="btn btn-outline-danger btn-sm external-script-remove">Verwijderen</button>
+                        </div>
+                        <textarea class="form-control" name="external_scripts_entry[]" rows="5" placeholder="<script src=&quot;https://static.salonized.com/widget.js&quot;><\/script>\nof\nconsole.log('Hallo');"></textarea>
+                    `;
+                    row.querySelector('textarea').value = value;
+                    return row;
+                }
+
+	                addButton.addEventListener('click', () => {
+	                    list.appendChild(createRow(''));
+	                    updateRemoveButtons();
+                        syncHiddenInput();
+	                });
+
+	                list.addEventListener('click', (event) => {
+	                    const button = event.target.closest('.external-script-remove');
+	                    if (!button) return;
+
+                    const rows = list.querySelectorAll('.external-script-row');
+                    if (rows.length === 1) {
+                        const input = rows[0].querySelector('textarea');
+                        if (input) input.value = '';
+                        syncHiddenInput();
+                        updateRemoveButtons();
+                        return;
+                    }
+
+	                    button.closest('.external-script-row')?.remove();
+	                    updateRemoveButtons();
+                        syncHiddenInput();
+	                });
+
+                    list.addEventListener('input', (event) => {
+                        if (event.target.matches('textarea[name="external_scripts_entry[]"]')) {
+                            syncHiddenInput();
+                        }
+                    });
+
+                    form.addEventListener('submit', () => {
+                        syncHiddenInput();
+                    });
+
+	                updateRemoveButtons();
+                    syncHiddenInput();
+	            })();
+	        </script>
+	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

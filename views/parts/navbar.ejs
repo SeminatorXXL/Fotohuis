@@ -1,69 +1,83 @@
 <nav class="navbar navbar-expand-lg site-navbar">
-    <div class="container">
-        <a class="navbar-brand" href="/" title="<%= companyInfo?.name || 'Home' %>">
-            <% const logoSrc = companyInfo?.logo ? (String(companyInfo.logo).startsWith('/') ? companyInfo.logo : '/images/' + companyInfo.logo) : '/images/fotohuisvenray-wit.png'; %>
-            <img src="<%= logoSrc %>" alt="<%= companyInfo?.name || 'Logo' %>">
-        </a>
+	    <div class="container">
+	        <a class="navbar-brand" href="/" title="<%= companyInfo?.name || 'Home' %>">
+	            <% const logoSrc = companyInfo?.logo ? (String(companyInfo.logo).startsWith('/') ? companyInfo.logo : '/images/' + companyInfo.logo) : '/images/fotohuisvenray-wit.png'; %>
+	            <img src="<%= logoSrc %>" alt="<%= companyInfo?.name || 'Logo' %>">
+	        </a>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+	        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#siteNavbarMenu" aria-controls="siteNavbarMenu" aria-expanded="false" aria-label="Menu openen">
+	            <span class="site-navbar-toggler-box" aria-hidden="true">
+	                <span class="site-navbar-toggler-line"></span>
+	                <span class="site-navbar-toggler-line"></span>
+	                <span class="site-navbar-toggler-line"></span>
+	            </span>
+	        </button>
 
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-            <ul class="navbar-nav">
-                <% if (navItems && navItems.length > 0) { %>
-                    <% navItems.forEach((item, index) => { %>
-                        <% const hasChildren = Array.isArray(item.children) && item.children.length > 0; %>
-                        <% const itemLabel = item.name || item.menu_item_name; %>
-                        <% const itemTitle = item.title || item.menu_item_title || itemLabel; %>
-                        <% const itemHref = item.path || item.href || '#'; %>
-                        <% if (hasChildren) { %>
-                            <li class="nav-item dropdown">
-                                <a
-                                    class="nav-link dropdown-toggle"
-                                    href="<%= itemHref %>"
-                                    id="navbarDropdown<%= item.id || index %>"
-                                    role="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                    title="<%= itemTitle %>"
-                                    <%= (item.target === '_blank') ? 'target="_blank" rel="noopener"' : '' %>>
-                                    <%= itemLabel %>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown<%= item.id || index %>">
-                                    <% item.children.forEach(child => { %>
-                                        <li>
-                                            <a
-                                                class="dropdown-item"
-                                                href="<%= child.path || child.href || '#' %>"
-                                                title="<%= child.title || child.menu_item_title || child.name %>"
-                                                <%= (child.target === '_blank') ? 'target="_blank" rel="noopener"' : '' %>>
-                                                <%= child.name || child.menu_item_name %>
-                                            </a>
-                                        </li>
-                                    <% }) %>
-                                </ul>
-                            </li>
-                        <% } else { %>
-                            <li class="nav-item">
-                                <a
-                                    class="nav-link"
-                                    href="<%= itemHref %>"
-                                    title="<%= itemTitle %>"
-                                    <%= (item.target === '_blank') ? 'target="_blank" rel="noopener"' : '' %>>
-                                    <%= itemLabel %>
-                                </a>
-                            </li>
-                        <% } %>
-                    <% }) %>
-                <% } else { %>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/" title="Back to home page">
-                            Back to home
-                        </a>
-                    </li>
-                <% } %>
-            </ul>
-        </div>
-    </div>
-</nav>
+	        <div class="offcanvas offcanvas-end offcanvas-lg site-mobile-menu" tabindex="-1" id="siteNavbarMenu" aria-labelledby="siteNavbarMenuLabel">
+	            <div class="offcanvas-header site-mobile-menu-header d-lg-none">
+	                <div class="site-mobile-menu-brand">
+	                    <span class="site-mobile-menu-kicker">Navigatie</span>
+	                    <span class="site-mobile-menu-title" id="siteNavbarMenuLabel"><%= companyInfo?.name || 'Menu' %></span>
+	                </div>
+	                <button type="button" class="btn-close btn-close-white site-mobile-menu-close" data-bs-dismiss="offcanvas" aria-label="Menu sluiten"></button>
+	            </div>
+
+	            <div class="offcanvas-body justify-content-end">
+	                <ul class="navbar-nav align-items-lg-center ms-lg-auto">
+	                    <% if (navItems && navItems.length > 0) { %>
+	                        <% navItems.forEach((item, index) => { %>
+	                            <% const hasChildren = Array.isArray(item.children) && item.children.length > 0; %>
+	                            <% const itemLabel = item.name || item.menu_item_name; %>
+	                            <% const itemTitle = item.title || item.menu_item_title || itemLabel; %>
+	                            <% const itemHref = item.path || item.href || '#'; %>
+	                            <% if (hasChildren) { %>
+	                                <li class="nav-item dropdown">
+	                                    <a
+	                                        class="nav-link dropdown-toggle"
+	                                        href="<%= itemHref %>"
+	                                        id="navbarDropdown<%= item.id || index %>"
+	                                        role="button"
+	                                        data-bs-toggle="dropdown"
+	                                        aria-expanded="false"
+	                                        title="<%= itemTitle %>"
+	                                        <%= (item.target === '_blank') ? 'target="_blank" rel="noopener"' : '' %>>
+	                                        <%= itemLabel %>
+	                                    </a>
+	                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown<%= item.id || index %>">
+	                                        <% item.children.forEach(child => { %>
+	                                            <li>
+	                                                <a
+	                                                    class="dropdown-item"
+	                                                    href="<%= child.path || child.href || '#' %>"
+	                                                    title="<%= child.title || child.menu_item_title || child.name %>"
+	                                                    <%= (child.target === '_blank') ? 'target="_blank" rel="noopener"' : '' %>>
+	                                                    <%= child.name || child.menu_item_name %>
+	                                                </a>
+	                                            </li>
+	                                        <% }) %>
+	                                    </ul>
+	                                </li>
+	                            <% } else { %>
+	                                <li class="nav-item">
+	                                    <a
+	                                        class="nav-link"
+	                                        href="<%= itemHref %>"
+	                                        title="<%= itemTitle %>"
+	                                        <%= (item.target === '_blank') ? 'target="_blank" rel="noopener"' : '' %>>
+	                                        <%= itemLabel %>
+	                                    </a>
+	                                </li>
+	                            <% } %>
+	                        <% }) %>
+	                    <% } else { %>
+	                        <li class="nav-item">
+	                            <a class="nav-link" href="/" title="Back to home page">
+	                                Back to home
+	                            </a>
+	                        </li>
+	                    <% } %>
+	                </ul>
+	            </div>
+	        </div>
+	    </div>
+	</nav>

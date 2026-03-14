@@ -189,8 +189,8 @@
 
 <%- include('parts/media_picker_modal') %>
 <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
-<script src="/js/cms-editor.js"></script>
-<script src="/js/seo-meter.js"></script>
+<script src="<%= versionAsset('/js/cms-editor.js') %>"></script>
+<script src="<%= versionAsset('/js/seo-meter.js') %>"></script>
 <script>
   (function () {
     const templateSelect = document.getElementById('template');

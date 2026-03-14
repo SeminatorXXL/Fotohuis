@@ -6,6 +6,7 @@ const db = require('../../db');
 const { isAuthenticated } = require('../auth');
 const loginProcess = require('../loginprocess');
 const { body, validationResult } = require('express-validator');
+const { encryptSecret, isEncryptedSecret } = require('../../lib/secret_crypto');
 
 const router = express.Router();
 router.use(loginProcess);
@@ -65,7 +66,16 @@ async function ensureAddressColumns() {
     { name: 'postal_code', sql: "ALTER TABLE company_info ADD COLUMN postal_code VARCHAR(32) NULL AFTER address_line_2" },
     { name: 'city', sql: "ALTER TABLE company_info ADD COLUMN city VARCHAR(128) NULL AFTER postal_code" },
     { name: 'country', sql: "ALTER TABLE company_info ADD COLUMN country VARCHAR(128) NULL AFTER city" },
-    { name: 'opening_hours', sql: "ALTER TABLE company_info ADD COLUMN opening_hours TEXT NULL AFTER country" }
+    { name: 'site_url', sql: "ALTER TABLE company_info ADD COLUMN site_url VARCHAR(255) NULL AFTER country" },
+    { name: 'opening_hours', sql: "ALTER TABLE company_info ADD COLUMN opening_hours TEXT NULL AFTER site_url" },
+    { name: 'external_scripts', sql: "ALTER TABLE company_info ADD COLUMN external_scripts TEXT NULL AFTER cookie" },
+    { name: 'smtp_host', sql: "ALTER TABLE company_info ADD COLUMN smtp_host VARCHAR(255) NULL AFTER external_scripts" },
+    { name: 'smtp_port', sql: "ALTER TABLE company_info ADD COLUMN smtp_port INT NULL AFTER smtp_host" },
+    { name: 'smtp_user', sql: "ALTER TABLE company_info ADD COLUMN smtp_user VARCHAR(255) NULL AFTER smtp_port" },
+    { name: 'smtp_pass', sql: "ALTER TABLE company_info ADD COLUMN smtp_pass VARCHAR(255) NULL AFTER smtp_user" },
+    { name: 'mail_from', sql: "ALTER TABLE company_info ADD COLUMN mail_from VARCHAR(255) NULL AFTER smtp_pass" },
+    { name: 'upload_allowed_ext', sql: "ALTER TABLE company_info ADD COLUMN upload_allowed_ext VARCHAR(255) NULL AFTER mail_from" },
+    { name: 'upload_max_size', sql: "ALTER TABLE company_info ADD COLUMN upload_max_size VARCHAR(32) NULL AFTER upload_allowed_ext" }
   ];
 
   for (const spec of specs) {
@@ -138,6 +148,60 @@ function serializeOpeningHours(rows) {
   return JSON.stringify(normalized);
 }
 
+function parseExternalScripts(source) {
+  if (!source) return [];
+
+  let parsed = [];
+  if (Array.isArray(source)) {
+    parsed = source;
+  } else if (typeof source === 'string') {
+    try {
+      const json = JSON.parse(source);
+      if (Array.isArray(json)) {
+        parsed = json;
+      } else {
+        parsed = source.split(/\r?\n/);
+      }
+    } catch (_err) {
+      parsed = source.split(/\r?\n/);
+    }
+  }
+
+  return parsed
+    .map((entry) => trim(entry))
+    .filter(Boolean);
+}
+
+function serializeExternalScripts(source) {
+  return JSON.stringify(parseExternalScripts(source));
+}
+
+function buildExternalScriptsFromBody(body, fallbackRaw = '') {
+  const entries = Array.isArray(body.external_scripts_entry)
+    ? body.external_scripts_entry
+    : (body.external_scripts_entry ? [body.external_scripts_entry] : []);
+
+  const normalized = entries
+    .map((entry) => trim(entry))
+    .filter(Boolean);
+
+  if (!normalized.length) {
+    return parseExternalScripts(body.external_scripts || fallbackRaw);
+  }
+
+  return normalized;
+}
+
+function getSubmittedExternalScripts(body) {
+  const entries = Array.isArray(body.external_scripts_entry)
+    ? body.external_scripts_entry
+    : (body.external_scripts_entry ? [body.external_scripts_entry] : []);
+
+  return entries
+    .map((entry) => trim(entry))
+    .filter(Boolean);
+}
+
 // ✅ GET: altijd verse data + cache uit
 router.get('/cms/general', isAuthenticated, async (req, res) => {
   try {
@@ -167,12 +231,15 @@ router.get('/cms/general', isAuthenticated, async (req, res) => {
     req.session.formdata = null;
 
     const viewModel = formdata ? { ...companyInfo, ...formdata } : companyInfo;
+    const smtpPassConfigured = Boolean(formdata?.smtp_pass || companyInfo.smtp_pass);
+    viewModel.smtp_pass = formdata?.smtp_pass && !isEncryptedSecret(formdata.smtp_pass) ? formdata.smtp_pass : '';
 
     return res.render('general', {
       session: req.session,
       saved,
       errors,
       companyInfo: viewModel,
+      smtpPassConfigured,
     });
   } catch (err) {
     console.error('Error loading company:', err);
@@ -193,6 +260,7 @@ const rules = [
   body('postal_code').optional({ checkFalsy: true }).trim().isLength({ max: 32 }),
   body('city').optional({ checkFalsy: true }).trim().isLength({ max: 128 }),
   body('country').optional({ checkFalsy: true }).trim().isLength({ max: 128 }),
+  body('site_url').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('opening_hours_day.*').optional({ checkFalsy: true }).trim().isLength({ max: 64 }),
   body('opening_hours_open.*').optional({ checkFalsy: true }).trim().isLength({ max: 16 }),
   body('opening_hours_close.*').optional({ checkFalsy: true }).trim().isLength({ max: 16 }),
@@ -204,6 +272,15 @@ const rules = [
   body('gtm_head').optional({ checkFalsy: true }).trim(),
   body('gtm_body').optional({ checkFalsy: true }).trim(),
   body('cookie').optional({ checkFalsy: true }).trim(),
+  body('external_scripts').optional({ checkFalsy: true }).trim(),
+  body('external_scripts_entry.*').optional({ checkFalsy: true }).trim().isLength({ max: 10000 }),
+  body('smtp_host').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('smtp_port').optional({ checkFalsy: true }).trim().isInt({ min: 1, max: 65535 }),
+  body('smtp_user').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('smtp_pass').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('mail_from').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('upload_allowed_ext').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('upload_max_size').optional({ checkFalsy: true }).trim().isLength({ max: 32 }),
   body('recaptcha_public_key').optional({ checkFalsy: true }).trim(),
   body('recaptcha_private_key').optional({ checkFalsy: true }).trim(),
 ];
@@ -221,6 +298,21 @@ router.post('/cms/general', isAuthenticated, faviconUploadMiddleware, rules, asy
     const faviconPath = req.file ? `/images/fav/${req.file.filename}` : trim(req.body.favicon || current.favicon || '');
     const openingHoursRows = buildOpeningHoursFromBody(req.body, current.opening_hours || '');
     const openingHoursJson = serializeOpeningHours(openingHoursRows);
+    const normalizedExternalScripts = buildExternalScriptsFromBody(req.body, current.external_scripts || '');
+    const externalScriptsJson = serializeExternalScripts(normalizedExternalScripts);
+
+    let smtpPassValue = current.smtp_pass || '';
+    const submittedSmtpPass = trim(req.body.smtp_pass);
+
+    if (submittedSmtpPass) {
+      smtpPassValue = encryptSecret(submittedSmtpPass);
+    } else if (smtpPassValue && !isEncryptedSecret(smtpPassValue)) {
+      try {
+        smtpPassValue = encryptSecret(smtpPassValue);
+      } catch (_err) {
+        smtpPassValue = current.smtp_pass || '';
+      }
+    }
 
     const data = {
       name: trim(req.body.name),
@@ -234,6 +326,7 @@ router.post('/cms/general', isAuthenticated, faviconUploadMiddleware, rules, asy
       postal_code: trim(req.body.postal_code),
       city: trim(req.body.city),
       country: trim(req.body.country),
+      site_url: trim(req.body.site_url),
       opening_hours: openingHoursJson,
       coc: trim(req.body.coc),
       instagram: trim(req.body.instagram),
@@ -243,29 +336,40 @@ router.post('/cms/general', isAuthenticated, faviconUploadMiddleware, rules, asy
       gtm_head: req.body.gtm_head ?? '',
       gtm_body: req.body.gtm_body ?? '',
       cookie: req.body.cookie ?? '',
+      external_scripts: externalScriptsJson,
+      smtp_host: trim(req.body.smtp_host),
+      smtp_port: trim(req.body.smtp_port),
+      smtp_user: trim(req.body.smtp_user),
+      smtp_pass: smtpPassValue,
+      mail_from: trim(req.body.mail_from),
+      upload_allowed_ext: trim(req.body.upload_allowed_ext),
+      upload_max_size: trim(req.body.upload_max_size),
       recaptcha_public_key: req.body.recaptcha_public_key ?? '',
       recaptcha_private_key: req.body.recaptcha_private_key ?? '',
     };
 
-    if (!errors.isEmpty()) {
-      req.session.errors = errors.array();
+    const routeErrors = errors.array();
+    if (routeErrors.length) {
       req.session.formdata = {
         ...data,
         opening_hours: openingHoursJson || serializeOpeningHours(DEFAULT_OPENING_DAYS.map((day) => ({ day, open: '', close: '' })))
       };
+      req.session.errors = routeErrors;
       return res.redirect('/cms/general');
     }
 
     const sql = `
       UPDATE ${TBL}
-      SET name=?, logo=?, favicon=?, email=?, mobile=?, phone=?, address_line_1=?, address_line_2=?, postal_code=?, city=?, country=?, opening_hours=?, coc=?, instagram=?, facebook=?, linkedin=?, tiktok=?, gtm_head=?, gtm_body=?, cookie=?, recaptcha_public_key=?, recaptcha_private_key=?
+      SET name=?, logo=?, favicon=?, email=?, mobile=?, phone=?, address_line_1=?, address_line_2=?, postal_code=?, city=?, country=?, site_url=?, opening_hours=?, coc=?, instagram=?, facebook=?, linkedin=?, tiktok=?, gtm_head=?, gtm_body=?, cookie=?, external_scripts=?, smtp_host=?, smtp_port=?, smtp_user=?, smtp_pass=?, mail_from=?, upload_allowed_ext=?, upload_max_size=?, recaptcha_public_key=?, recaptcha_private_key=?
       WHERE id=1
     `;
     const vals = [
       data.name, data.logo, data.favicon, data.email, data.mobile, data.phone,
-      data.address_line_1, data.address_line_2, data.postal_code, data.city, data.country, data.opening_hours, data.coc,
+      data.address_line_1, data.address_line_2, data.postal_code, data.city, data.country, data.site_url, data.opening_hours, data.coc,
       data.instagram, data.facebook, data.linkedin, data.tiktok,
-      data.gtm_head, data.gtm_body, data.cookie, data.recaptcha_public_key, data.recaptcha_private_key
+      data.gtm_head, data.gtm_body, data.cookie, data.external_scripts,
+      data.smtp_host, data.smtp_port || null, data.smtp_user, data.smtp_pass, data.mail_from, data.upload_allowed_ext, data.upload_max_size,
+      data.recaptcha_public_key, data.recaptcha_private_key
     ];
     await db.query(sql, vals);
     req.app.locals.companyInfo = { ...(req.app.locals.companyInfo || {}), ...data };

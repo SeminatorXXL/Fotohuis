@@ -63,24 +63,30 @@ db.subscribe(({ isHealthy }) => {
 /**
  * Asset cache-busting helper
  */
-const assetCache = new Map();
-
 app.locals.versionAsset = (assetPath) => {
-  if (process.env.NODE_ENV === 'production' && assetCache.has(assetPath)) {
-    return assetCache.get(assetPath);
+  if (!assetPath) return assetPath;
+
+  const [pathname, queryString = ''] = String(assetPath).split('?');
+  let fullPath;
+
+  if (pathname.startsWith('/private/')) {
+    fullPath = path.join(__dirname, pathname.replace(/^\/+/, '').split('/').join(path.sep));
+  } else if (pathname.startsWith('/cms/private/')) {
+    fullPath = path.join(__dirname, pathname.replace(/^\/cms\/private\//, 'private/').split('/').join(path.sep));
+  } else {
+    const relativePath = pathname.replace(/^\/+/, '').split('/').join(path.sep);
+    fullPath = path.join(__dirname, 'public', relativePath);
   }
 
   try {
-    const fullPath = path.join(__dirname, 'public', assetPath);
     const stat = fs.statSync(fullPath);
-    const versioned = `${assetPath}?v=${stat.mtime.getTime()}`;
+    const params = new URLSearchParams(queryString);
 
-    if (process.env.NODE_ENV === 'production') {
-      assetCache.set(assetPath, versioned);
-    }
-    return versioned;
+    params.set('v', String(Math.trunc(stat.mtimeMs)));
+
+    return `${pathname}?${params.toString()}`;
   } catch {
-    return `${assetPath}?v=${Date.now()}`;
+    return assetPath;
   }
 };
 

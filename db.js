@@ -5,7 +5,7 @@ const pool = mysql.createPool({
   host: process.env.DB_HOST || '192.168.2.22',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: 'fotohuis'
+  database: process.env.DB_NAME || ''
 });
 
 let isHealthy = true;

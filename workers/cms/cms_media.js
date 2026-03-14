@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 const fssync = require('fs');
 const multer = require('multer');
 const { body, query, validationResult } = require('express-validator');
+const db = require('../../db');
 
 require('dotenv').config();
 const { isAuthenticated } = require('../auth');
@@ -12,11 +13,12 @@ const { isAuthenticated } = require('../auth');
 // === Config ===
 const PUBLIC_URL_MEDIA = '/media'; // publiek pad voor <img src>
 const BASE_UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR || 'public/media');
-const ALLOWED = (process.env.UPLOAD_ALLOWED_EXT || 'jpg,jpeg,png,webp,gif,svg')
+const DEFAULT_ALLOWED_EXT = (process.env.UPLOAD_ALLOWED_EXT || 'jpg,jpeg,png,webp,gif,svg')
   .toLowerCase()
   .split(',')
-  .map(e => e.trim());
-const MAX_SIZE_LABEL = process.env.UPLOAD_MAX_SIZE || '10mb';
+  .map((e) => e.trim())
+  .filter(Boolean);
+const DEFAULT_MAX_SIZE_LABEL = process.env.UPLOAD_MAX_SIZE || '10mb';
 
 function parseSizeToBytes(value) {
   const raw = String(value || '').trim().toLowerCase();
@@ -36,7 +38,39 @@ function parseSizeToBytes(value) {
   return Math.round(n * (map[unit] || 1));
 }
 
-const MAX_SIZE_BYTES = parseSizeToBytes(MAX_SIZE_LABEL);
+function normalizeAllowedExtensions(value) {
+  const normalized = String(value || '')
+    .toLowerCase()
+    .split(',')
+    .map((entry) => entry.trim().replace(/^\./, ''))
+    .filter(Boolean);
+
+  return normalized.length ? normalized : DEFAULT_ALLOWED_EXT;
+}
+
+async function getMediaConfig() {
+  try {
+    const [rows] = await db.query('SELECT upload_allowed_ext, upload_max_size FROM company_info WHERE id = 1');
+    const row = rows?.[0] || {};
+    const allowedExtensions = normalizeAllowedExtensions(row.upload_allowed_ext);
+    const maxSizeLabel = String(row.upload_max_size || DEFAULT_MAX_SIZE_LABEL).trim() || DEFAULT_MAX_SIZE_LABEL;
+
+    return {
+      allowedExtensions,
+      acceptAttr: allowedExtensions.map((ext) => `.${ext}`).join(','),
+      maxSizeLabel,
+      maxSizeBytes: parseSizeToBytes(maxSizeLabel)
+    };
+  } catch (err) {
+    console.error('Media config fallback error:', err);
+    return {
+      allowedExtensions: DEFAULT_ALLOWED_EXT,
+      acceptAttr: DEFAULT_ALLOWED_EXT.map((ext) => `.${ext}`).join(','),
+      maxSizeLabel: DEFAULT_MAX_SIZE_LABEL,
+      maxSizeBytes: parseSizeToBytes(DEFAULT_MAX_SIZE_LABEL)
+    };
+  }
+}
 
 // === Helpers ===
 function safeJoinBase(rel = '') {
@@ -86,24 +120,27 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
-  storage,
-  limits: { fileSize: MAX_SIZE_BYTES },
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname || '').toLowerCase().replace('.', '');
-    if (!ALLOWED.includes(ext)) {
-      return cb(new Error(`Bestandstype .${ext} is niet toegestaan`));
+function createUpload(mediaConfig) {
+  return multer({
+    storage,
+    limits: { fileSize: mediaConfig.maxSizeBytes },
+    fileFilter: (req, file, cb) => {
+      const ext = path.extname(file.originalname || '').toLowerCase().replace('.', '');
+      if (!mediaConfig.allowedExtensions.includes(ext)) {
+        return cb(new Error(`Bestandstype .${ext} is niet toegestaan`));
+      }
+      cb(null, true);
     }
-    cb(null, true);
-  }
-});
+  });
+}
 
-function uploadFilesMiddleware(req, res, next) {
-  upload.array('files', 20)(req, res, (err) => {
+async function uploadFilesMiddleware(req, res, next) {
+  const mediaConfig = await getMediaConfig();
+  createUpload(mediaConfig).array('files', 20)(req, res, (err) => {
     if (!err) return next();
 
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-      req.session.flash_error = `Bestand is te groot. Maximale grootte is ${MAX_SIZE_LABEL}.`;
+      req.session.flash_error = `Bestand is te groot. Maximale grootte is ${mediaConfig.maxSizeLabel}.`;
     } else {
       req.session.flash_error = err.message || 'Upload mislukt.';
     }
@@ -138,6 +175,7 @@ router.get(
         return res.status(400).send('Invalid query parameters');
       }
 
+      const mediaConfig = await getMediaConfig();
       const relDir = req.query.dir || '';
       const absDir = safeJoinBase(relDir);
       const pickerMode = req.query.picker === '1';
@@ -193,7 +231,9 @@ router.get(
         uploadAction: '/cms/media/upload',
         csrfToken: req.csrfToken ? req.csrfToken() : null,
         pickerMode,
-        maxUploadSize: MAX_SIZE_LABEL,
+        maxUploadSize: mediaConfig.maxSizeLabel,
+        uploadAcceptAttr: mediaConfig.acceptAttr,
+        allowedUploadExtensions: mediaConfig.allowedExtensions.join(', '),
         session: req.session
       });
     } catch (err) {
