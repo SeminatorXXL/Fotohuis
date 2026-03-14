@@ -9,6 +9,7 @@ Deze handleiding zet deze applicatie live op een STRATO VPS/Server met:
 - geen `:3000` in de URL
 - deploys via `git pull`
 - MariaDB + optioneel phpMyAdmin
+- persistente opslag voor uploads, favicons en WebP-bestanden
 
 Deze route gebruikt **geen SSL in `server.js` zelf**. De Node-app draait intern op HTTP en Traefik handelt HTTPS af.
 
@@ -28,6 +29,11 @@ Belangrijk voor deze codebase:
 - `db.js` gebruikt nu `DB_HOST`, `DB_USER`, `DB_PASSWORD` en `DB_NAME` uit `.env`
 - je database mag dus via `DB_NAME` bepaald worden, bijvoorbeeld `fotohuis`
 - `SSL_KEY_PATH` en `SSL_CERT_PATH` zijn in deze Docker/Traefik setup niet nodig
+- uploads gaan naar `public/media`
+- favicons gaan naar `public/images/fav`
+- gegenereerde WebP-bestanden gaan naar `public/media-webp`
+- deze mappen moeten buiten de container persistent worden opgeslagen
+- alle submappen die gebruikers in het CMS onder `public/media` aanmaken moeten ook persistent blijven
 
 ## 2. DNS instellen
 
@@ -196,6 +202,28 @@ Opslaan:
 
 ## 9. `docker-compose.yml` maken
 
+Voordat je `docker-compose.yml` maakt, maak eerst de persistente opslagmappen:
+
+```bash
+mkdir -p /opt/fotohuis/storage/media
+mkdir -p /opt/fotohuis/storage/media-webp
+mkdir -p /opt/fotohuis/storage/favicons
+```
+
+Controleer:
+
+```bash
+ls -la /opt/fotohuis/storage
+```
+
+Belangrijk:
+
+- alles wat in het CMS onder `/media` wordt aangemaakt, inclusief zelfgemaakte submappen en bestanden in die submappen, blijft bewaard in `/opt/fotohuis/storage/media`
+- WebP-varianten blijven bewaard in `/opt/fotohuis/storage/media-webp`
+- favicons blijven bewaard in `/opt/fotohuis/storage/favicons`
+- een nieuwe deploy met `git pull` en `docker compose up -d --build` verwijdert deze bestanden niet
+- bestanden verdwijnen alleen als iemand ze bewust verwijdert via het CMS of rechtstreeks op de server
+
 Maak het bestand:
 
 ```bash
@@ -234,6 +262,10 @@ services:
       - .env
     depends_on:
       - db
+    volumes:
+      - ./storage/media:/app/public/media
+      - ./storage/media-webp:/app/public/media-webp
+      - ./storage/favicons:/app/public/images/fav
     restart: unless-stopped
     labels:
       - traefik.enable=true
@@ -411,13 +443,14 @@ Open:
 
 - `https://www.fotohuisvenray.nl`
 
-Optioneel:
+Voor phpMyAdmin:
 
 - `https://www.fotohuisvenray.nl:8443`
 
 Belangrijk:
 
 - `https://fotohuisvenray.nl` zal automatisch redirecten naar `https://www.fotohuisvenray.nl`
+- `https://www.fotohuisvenray.nl:8443` moet direct phpMyAdmin tonen
 - bij de eerste start kan Let's Encrypt enkele minuten nodig hebben
 - DNS moet al goed naar de server wijzen
 - poort `80`, `443` en `8443` moeten open staan
@@ -437,6 +470,16 @@ Traefik handelt SSL en vernieuwing automatisch af.
 ## 17. Nieuwe versie live zetten
 
 Voor een update hoef je `docker-compose.yml` niet aan te passen.
+
+Omdat uploads en gegenereerde afbeeldingen in `./storage/...` staan, blijven die behouden als je een nieuwe versie bouwt of de app-container opnieuw maakt.
+
+Dat geldt ook voor:
+
+- zelf aangemaakte mappen in de media manager
+- bestanden in geneste submappen
+- later geuploade afbeeldingen
+- gegenereerde WebP-bestanden
+- favicon uploads
 
 Voer uit:
 
@@ -515,6 +558,10 @@ Optioneel als je live data importeert:
 Map die je moet maken:
 
 - `/opt/fotohuis/letsencrypt/`
+- `/opt/fotohuis/storage/`
+- `/opt/fotohuis/storage/media/`
+- `/opt/fotohuis/storage/media-webp/`
+- `/opt/fotohuis/storage/favicons/`
 
 Bestand voor certificaatopslag:
 
