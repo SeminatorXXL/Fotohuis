@@ -17,10 +17,18 @@ const https       = require('https');
 const db = require('./db');
 
 const app = express();
+app.set('trust proxy', 1);
 
 const PORT      = Number(process.env.PORT) || 3000;
 const USE_HTTPS = String(process.env.USE_HTTPS).toLowerCase() === 'true';
 const BASE_URL  = process.env.BASE_URL || `http://localhost:${PORT}`;
+const SESSION_SECRET = String(process.env.SESSION_SECRET || '').trim() || crypto.randomBytes(64).toString('hex');
+const CERT_KEY_PATH = String(process.env.CERT_KEY_PATH || process.env.SSL_KEY_PATH || '').trim();
+const CERT_FULLCHAIN_PATH = String(process.env.CERT_FULLCHAIN_PATH || process.env.SSL_CERT_PATH || '').trim();
+
+if (!process.env.SESSION_SECRET) {
+  console.warn('SESSION_SECRET ontbreekt in .env, tijdelijke fallback wordt gebruikt.');
+}
 
 // ==========================
 // View engine & views folder
@@ -148,7 +156,7 @@ app.use((req, res, next) => {
 // Sessions
 app.use(
   session({
-    secret: crypto.randomBytes(64).toString('hex'),
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 60 * 60 * 1000 }
@@ -197,8 +205,8 @@ function startHttp() {
 
 function startHttps() {
   try {
-    const key  = fs.readFileSync(process.env.CERT_KEY_PATH, 'utf8');
-    const cert = fs.readFileSync(process.env.CERT_FULLCHAIN_PATH, 'utf8');
+    const key  = fs.readFileSync(CERT_KEY_PATH, 'utf8');
+    const cert = fs.readFileSync(CERT_FULLCHAIN_PATH, 'utf8');
 
     https.createServer({ key, cert }, app).listen(PORT || 443, () => {
       console.log(`🔒 HTTPS server running on port ${PORT || 443}`);

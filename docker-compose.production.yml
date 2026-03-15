@@ -1,0 +1,86 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure-pma.address=:8443
+      - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8443:8443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file:
+      - .env
+    depends_on:
+      - db
+    volumes:
+      - ./storage/media:/app/public/media
+      - ./storage/media-webp:/app/public/media-webp
+      - ./storage/images:/app/public/images
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.fotohuis.rule=Host(`www.fotohuisvenray.nl`)
+      - traefik.http.routers.fotohuis.entrypoints=websecure
+      - traefik.http.routers.fotohuis.tls.certresolver=le
+      - traefik.http.services.fotohuis.loadbalancer.server.port=3000
+      - traefik.http.routers.fotohuis-www-redirect.rule=Host(`fotohuisvenray.nl`)
+      - traefik.http.routers.fotohuis-www-redirect.entrypoints=web,websecure
+      - traefik.http.routers.fotohuis-www-redirect.middlewares=redirect-to-www
+      - traefik.http.routers.fotohuis-www-redirect.tls.certresolver=le
+      - traefik.http.routers.fotohuis-www-redirect.service=noop@internal
+      - traefik.http.middlewares.redirect-to-www.redirectregex.regex=^https?://fotohuisvenray\.nl/(.*)
+      - traefik.http.middlewares.redirect-to-www.redirectregex.replacement=https://www.fotohuisvenray.nl/$${1}
+      - traefik.http.middlewares.redirect-to-www.redirectregex.permanent=true
+
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_ROOT_PASSWORD}
+    depends_on:
+      - db
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.phpmyadmin.rule=Host(`www.fotohuisvenray.nl`)
+      - traefik.http.routers.phpmyadmin.entrypoints=websecure-pma
+      - traefik.http.routers.phpmyadmin.tls.certresolver=le
+      - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
+      - traefik.http.routers.phpmyadmin-www-redirect.rule=Host(`fotohuisvenray.nl`)
+      - traefik.http.routers.phpmyadmin-www-redirect.entrypoints=websecure-pma
+      - traefik.http.routers.phpmyadmin-www-redirect.middlewares=redirect-to-www-pma
+      - traefik.http.routers.phpmyadmin-www-redirect.tls.certresolver=le
+      - traefik.http.routers.phpmyadmin-www-redirect.service=noop@internal
+      - traefik.http.middlewares.redirect-to-www-pma.redirectregex.regex=^https://fotohuisvenray\.nl:8443/(.*)
+      - traefik.http.middlewares.redirect-to-www-pma.redirectregex.replacement=https://www.fotohuisvenray.nl:8443/$${1}
+      - traefik.http.middlewares.redirect-to-www-pma.redirectregex.permanent=true
+
+volumes:
+  db_data:

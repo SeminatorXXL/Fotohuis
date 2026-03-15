@@ -9,7 +9,7 @@ Deze handleiding zet deze applicatie live op een STRATO VPS/Server met:
 - geen `:3000` in de URL
 - deploys via `git pull`
 - MariaDB + optioneel phpMyAdmin
-- persistente opslag voor uploads, favicons en WebP-bestanden
+- persistente opslag voor uploads, images en WebP-bestanden
 
 Deze route gebruikt **geen SSL in `server.js` zelf**. De Node-app draait intern op HTTP en Traefik handelt HTTPS af.
 
@@ -30,7 +30,7 @@ Belangrijk voor deze codebase:
 - je database mag dus via `DB_NAME` bepaald worden, bijvoorbeeld `fotohuis`
 - `SSL_KEY_PATH` en `SSL_CERT_PATH` zijn in deze Docker/Traefik setup niet nodig
 - uploads gaan naar `public/media`
-- favicons gaan naar `public/images/fav`
+- logo's, favicons en andere site-images kunnen in `public/images` staan
 - gegenereerde WebP-bestanden gaan naar `public/media-webp`
 - deze mappen moeten buiten de container persistent worden opgeslagen
 - alle submappen die gebruikers in het CMS onder `public/media` aanmaken moeten ook persistent blijven
@@ -113,45 +113,36 @@ Je moet hier onder andere zien:
 - `server.js`
 - `package.json`
 - `Dockerfile`
+- `.env.example`
+- `docker-compose.production.yml`
+- `scripts/init-production-storage.sh`
 
 ## 7. Productie `.env` maken
 
-Maak een `.env` bestand in de projectroot:
+Kopieer eerst het voorbeeldbestand:
+
+```bash
+cd /opt/fotohuis
+cp .env.example .env
+```
+
+Open daarna `.env`:
 
 ```bash
 nano /opt/fotohuis/.env
 ```
 
-Plak dit erin:
+Vul minimaal deze waarden aan of controleer ze:
 
-```env
-# Server
-PORT=3000
-USE_HTTPS=false
-BASE_URL=https://www.fotohuisvenray.nl
-
-# Niet gebruikt in deze Traefik setup, maar mag blijven staan
-SSL_KEY_PATH=
-SSL_CERT_PATH=
-
-# Secret voor versleutelde SMTP-wachtwoorden in de database
-SMTP_SECRET_KEY=VUL_HIER_EEN_LANGE_UNIEKE_GEHEIME_SLEUTEL_IN
-
-# Database
-DB_HOST=db
-DB_USER=fotohuis
-DB_PASSWORD=VUL_HIER_EEN_STERK_DB_WACHTWOORD_IN
-DB_NAME=fotohuis
-
-# Encryptie
-BCRYPT_ROUNDS=12
-
-# Uploads
-UPLOAD_DIR=public/media
-
-# CSRF
-USE_CSRF=false
-```
+- `BASE_URL=https://www.fotohuisvenray.nl`
+- `SESSION_SECRET=...`
+- `TRAEFIK_ACME_EMAIL=...`
+- `SMTP_SECRET_KEY=...`
+- `DB_HOST=db`
+- `DB_USER=fotohuis`
+- `DB_PASSWORD=...`
+- `DB_ROOT_PASSWORD=...`
+- `DB_NAME=fotohuis`
 
 Opslaan in `nano`:
 
@@ -165,188 +156,57 @@ Controleer:
 cat /opt/fotohuis/.env
 ```
 
-## 8. `server.js` voorbereiden voor reverse proxy
+## 8. `server.js` hoeft niet meer handmatig aangepast te worden
 
-Omdat de app achter Traefik draait, is deze wijziging aanbevolen:
+Deze repository is nu al voorbereid op reverse proxy gebruik:
 
-Open bestand:
+- `trust proxy` staat al aan
+- sessies gebruiken nu `SESSION_SECRET` uit `.env`
+- SSL env-namen ondersteunen zowel `CERT_*` als `SSL_*`
 
-```bash
-nano /opt/fotohuis/server.js
-```
+## 9. Production storage initialiseren
 
-Zoek deze regel:
+De repository bevat nu een init-script dat automatisch:
 
-```js
-const app = express();
-```
+- `storage/media` maakt
+- `storage/media-webp` maakt
+- `storage/images` maakt
+- `letsencrypt/acme.json` maakt
+- standaard assets uit `public/media`, `public/media-webp` en `public/images` kopieert als de storage nog leeg is
 
-Zet daar direct onder:
-
-```js
-app.set('trust proxy', 1);
-```
-
-Dus:
-
-```js
-const app = express();
-app.set('trust proxy', 1);
-```
-
-Opslaan:
-
-1. `Ctrl + O`
-2. `Enter`
-3. `Ctrl + X`
-
-## 9. `docker-compose.yml` maken
-
-Voordat je `docker-compose.yml` maakt, maak eerst de persistente opslagmappen:
+Voer uit:
 
 ```bash
-mkdir -p /opt/fotohuis/storage/media
-mkdir -p /opt/fotohuis/storage/media-webp
-mkdir -p /opt/fotohuis/storage/favicons
+cd /opt/fotohuis
+chmod +x scripts/init-production-storage.sh
+./scripts/init-production-storage.sh
 ```
 
 Controleer:
 
 ```bash
 ls -la /opt/fotohuis/storage
+ls -la /opt/fotohuis/letsencrypt
 ```
 
 Belangrijk:
 
 - alles wat in het CMS onder `/media` wordt aangemaakt, inclusief zelfgemaakte submappen en bestanden in die submappen, blijft bewaard in `/opt/fotohuis/storage/media`
 - WebP-varianten blijven bewaard in `/opt/fotohuis/storage/media-webp`
-- favicons blijven bewaard in `/opt/fotohuis/storage/favicons`
-- een nieuwe deploy met `git pull` en `docker compose up -d --build` verwijdert deze bestanden niet
+- alles onder `/images`, inclusief logo's en favicons, blijft bewaard in `/opt/fotohuis/storage/images`
+- een nieuwe deploy met `git pull` en `docker compose -f docker-compose.production.yml up -d --build` verwijdert deze bestanden niet
 - bestanden verdwijnen alleen als iemand ze bewust verwijdert via het CMS of rechtstreeks op de server
 
-Maak het bestand:
+## 10. Production compose-template gebruiken
 
-```bash
-nano /opt/fotohuis/docker-compose.yml
-```
+De repository bevat nu al een productieconfig:
 
-Plak dit erin:
-
-```yaml
-services:
-  traefik:
-    image: traefik:v3.1
-    command:
-      - --api.dashboard=true
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-      - --entrypoints.websecure-pma.address=:8443
-      - --certificatesresolvers.le.acme.email=info@fotohuisvenray.nl
-      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.le.acme.httpchallenge=true
-      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8443:8443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
-    restart: unless-stopped
-
-  app:
-    build: .
-    env_file:
-      - .env
-    depends_on:
-      - db
-    volumes:
-      - ./storage/media:/app/public/media
-      - ./storage/media-webp:/app/public/media-webp
-      - ./storage/favicons:/app/public/images/fav
-    restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.fotohuis.rule=Host(`www.fotohuisvenray.nl`)
-      - traefik.http.routers.fotohuis.entrypoints=websecure
-      - traefik.http.routers.fotohuis.tls.certresolver=le
-      - traefik.http.services.fotohuis.loadbalancer.server.port=3000
-      - traefik.http.routers.fotohuis-www-redirect.rule=Host(`fotohuisvenray.nl`)
-      - traefik.http.routers.fotohuis-www-redirect.entrypoints=web,websecure
-      - traefik.http.routers.fotohuis-www-redirect.middlewares=redirect-to-www
-      - traefik.http.routers.fotohuis-www-redirect.tls.certresolver=le
-      - traefik.http.routers.fotohuis-www-redirect.service=noop@internal
-      - traefik.http.middlewares.redirect-to-www.redirectregex.regex=^https?://fotohuisvenray\\.nl/(.*)
-      - traefik.http.middlewares.redirect-to-www.redirectregex.replacement=https://www.fotohuisvenray.nl/$${1}
-      - traefik.http.middlewares.redirect-to-www.redirectregex.permanent=true
-
-  db:
-    image: mariadb:11
-    environment:
-      MYSQL_ROOT_PASSWORD=VUL_HIER_EEN_STERK_ROOT_WACHTWOORD_IN
-      MYSQL_DATABASE=fotohuis
-      MYSQL_USER=fotohuis
-      MYSQL_PASSWORD=VUL_HIER_HETZELFDE_DB_WACHTWOORD_IN_ALS_IN_ENV
-    volumes:
-      - db_data:/var/lib/mysql
-    restart: unless-stopped
-
-  phpmyadmin:
-    image: phpmyadmin:latest
-    environment:
-      PMA_HOST=db
-      PMA_USER=root
-      PMA_PASSWORD=VUL_HIER_HET_ROOT_WACHTWOORD_IN
-    depends_on:
-      - db
-    restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.phpmyadmin.rule=Host(`www.fotohuisvenray.nl`)
-      - traefik.http.routers.phpmyadmin.entrypoints=websecure-pma
-      - traefik.http.routers.phpmyadmin.tls.certresolver=le
-      - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
-      - traefik.http.routers.phpmyadmin-www-redirect.rule=Host(`fotohuisvenray.nl`)
-      - traefik.http.routers.phpmyadmin-www-redirect.entrypoints=websecure-pma
-      - traefik.http.routers.phpmyadmin-www-redirect.middlewares=redirect-to-www-pma
-      - traefik.http.routers.phpmyadmin-www-redirect.tls.certresolver=le
-      - traefik.http.routers.phpmyadmin-www-redirect.service=noop@internal
-      - traefik.http.middlewares.redirect-to-www-pma.redirectregex.regex=^https://fotohuisvenray\\.nl:8443/(.*)
-      - traefik.http.middlewares.redirect-to-www-pma.redirectregex.replacement=https://www.fotohuisvenray.nl:8443/$${1}
-      - traefik.http.middlewares.redirect-to-www-pma.redirectregex.permanent=true
-
-volumes:
-  db_data:
-```
-
-Opslaan:
-
-1. `Ctrl + O`
-2. `Enter`
-3. `Ctrl + X`
+- `/opt/fotohuis/docker-compose.production.yml`
 
 Controleer:
 
 ```bash
-cat /opt/fotohuis/docker-compose.yml
-```
-
-## 10. Let's Encrypt opslagmap maken
-
-Maak de map en het certificaatbestand:
-
-```bash
-mkdir -p /opt/fotohuis/letsencrypt
-touch /opt/fotohuis/letsencrypt/acme.json
-chmod 600 /opt/fotohuis/letsencrypt/acme.json
-```
-
-Controleer:
-
-```bash
-ls -la /opt/fotohuis/letsencrypt
+cat /opt/fotohuis/docker-compose.production.yml
 ```
 
 ## 11. Dockerfile controleren
@@ -386,13 +246,13 @@ Start eerst alleen de database:
 
 ```bash
 cd /opt/fotohuis
-docker compose up -d db
+docker compose -f docker-compose.production.yml up -d db
 ```
 
 Controleer:
 
 ```bash
-docker compose ps
+docker compose -f docker-compose.production.yml ps
 ```
 
 ## 13. Database importeren
@@ -411,14 +271,14 @@ Importeer daarna je eigen dump:
 
 ```bash
 cd /opt/fotohuis
-docker compose exec -T db mariadb -u root -pVUL_HIER_EEN_STERK_ROOT_WACHTWOORD_IN fotohuis < backup-live.sql
+docker compose -f docker-compose.production.yml exec -T db mariadb -u root -pJOUW_DB_ROOT_PASSWORD fotohuis < backup-live.sql
 ```
 
 Controleer eventueel:
 
 ```bash
-docker compose exec db mariadb -u root -pVUL_HIER_EEN_STERK_ROOT_WACHTWOORD_IN -e "SHOW DATABASES;"
-docker compose exec db mariadb -u root -pVUL_HIER_EEN_STERK_ROOT_WACHTWOORD_IN -e "USE fotohuis; SHOW TABLES;"
+docker compose -f docker-compose.production.yml exec db mariadb -u root -pJOUW_DB_ROOT_PASSWORD -e "SHOW DATABASES;"
+docker compose -f docker-compose.production.yml exec db mariadb -u root -pJOUW_DB_ROOT_PASSWORD -e "USE fotohuis; SHOW TABLES;"
 ```
 
 ## 14. Alles starten
@@ -427,14 +287,14 @@ Start de volledige stack:
 
 ```bash
 cd /opt/fotohuis
-docker compose up -d --build
+docker compose -f docker-compose.production.yml up -d --build
 ```
 
 Controleer:
 
 ```bash
-docker compose ps
-docker compose logs --tail=100
+docker compose -f docker-compose.production.yml ps
+docker compose -f docker-compose.production.yml logs --tail=100
 ```
 
 ## 15. Website testen
@@ -469,7 +329,7 @@ Traefik handelt SSL en vernieuwing automatisch af.
 
 ## 17. Nieuwe versie live zetten
 
-Voor een update hoef je `docker-compose.yml` niet aan te passen.
+Voor een update hoef je `docker-compose.production.yml` normaal niet aan te passen.
 
 Omdat uploads en gegenereerde afbeeldingen in `./storage/...` staan, blijven die behouden als je een nieuwe versie bouwt of de app-container opnieuw maakt.
 
@@ -479,21 +339,23 @@ Dat geldt ook voor:
 - bestanden in geneste submappen
 - later geuploade afbeeldingen
 - gegenereerde WebP-bestanden
-- favicon uploads
+- logo's in `/images`
+- favicon uploads in `/images/fav`
 
 Voer uit:
 
 ```bash
 cd /opt/fotohuis
 git pull origin main
-docker compose up -d --build
+./scripts/init-production-storage.sh
+docker compose -f docker-compose.production.yml up -d --build
 ```
 
 Controleer daarna:
 
 ```bash
-docker compose ps
-docker compose logs --tail=100 app
+docker compose -f docker-compose.production.yml ps
+docker compose -f docker-compose.production.yml logs --tail=100 app
 ```
 
 ## 18. Handige debug commando's
@@ -501,37 +363,37 @@ docker compose logs --tail=100 app
 Status containers:
 
 ```bash
-docker compose ps
+docker compose -f docker-compose.production.yml ps
 ```
 
 Logs van app:
 
 ```bash
-docker compose logs -f app
+docker compose -f docker-compose.production.yml logs -f app
 ```
 
 Logs van Traefik:
 
 ```bash
-docker compose logs -f traefik
+docker compose -f docker-compose.production.yml logs -f traefik
 ```
 
 Logs van database:
 
 ```bash
-docker compose logs -f db
+docker compose -f docker-compose.production.yml logs -f db
 ```
 
 App herstarten:
 
 ```bash
-docker compose restart app
+docker compose -f docker-compose.production.yml restart app
 ```
 
 Volledige rebuild:
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.production.yml up -d --build
 ```
 
 ## 19. Beveiligingsadvies
@@ -547,9 +409,11 @@ docker compose up -d --build
 Bestanden die op de server moeten bestaan:
 
 - `/opt/fotohuis/.env`
-- `/opt/fotohuis/docker-compose.yml`
+- `/opt/fotohuis/.env.example`
+- `/opt/fotohuis/docker-compose.production.yml`
 - `/opt/fotohuis/Dockerfile`
 - `/opt/fotohuis/server.js`
+- `/opt/fotohuis/scripts/init-production-storage.sh`
 
 Optioneel als je live data importeert:
 
@@ -561,7 +425,7 @@ Map die je moet maken:
 - `/opt/fotohuis/storage/`
 - `/opt/fotohuis/storage/media/`
 - `/opt/fotohuis/storage/media-webp/`
-- `/opt/fotohuis/storage/favicons/`
+- `/opt/fotohuis/storage/images/`
 
 Bestand voor certificaatopslag:
 
