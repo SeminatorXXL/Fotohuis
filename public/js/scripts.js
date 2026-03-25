@@ -123,6 +123,143 @@ function setupMobileMenu() {
   }
 }
 
+let recaptchaScriptPromise = null;
+
+function getRecaptchaProtectedForms() {
+  return Array.from(document.forms).filter((form) => (
+    form.hasAttribute('data-recaptcha-form') ||
+    Boolean(form.querySelector('input[name="recaptcha_token"]'))
+  ));
+}
+
+function ensureRecaptchaTokenInput(form) {
+  let tokenInput = form.querySelector('input[name="recaptcha_token"]');
+
+  if (tokenInput) {
+    return tokenInput;
+  }
+
+  tokenInput = document.createElement('input');
+  tokenInput.type = 'hidden';
+  tokenInput.name = 'recaptcha_token';
+  form.appendChild(tokenInput);
+
+  return tokenInput;
+}
+
+function ensureRecaptchaNotice(form) {
+  if (form.querySelector('.recaptcha-notice')) {
+    return;
+  }
+
+  const notice = document.createElement('p');
+  notice.className = 'recaptcha-notice';
+  notice.innerHTML = 'Deze site wordt beschermd door reCAPTCHA en het Google <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">privacybeleid</a> en de <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer">servicevoorwaarden</a> zijn van toepassing.';
+
+  const submitControl = form.querySelector('button[type="submit"], input[type="submit"]');
+
+  if (submitControl?.parentElement) {
+    submitControl.parentElement.insertBefore(notice, submitControl);
+    return;
+  }
+
+  form.appendChild(notice);
+}
+
+function loadRecaptchaScript(siteKey) {
+  if (window.grecaptcha?.execute) {
+    return Promise.resolve(window.grecaptcha);
+  }
+
+  if (recaptchaScriptPromise) {
+    return recaptchaScriptPromise;
+  }
+
+  recaptchaScriptPromise = new Promise((resolve, reject) => {
+    const resolveWhenReady = () => {
+      if (window.grecaptcha?.ready && window.grecaptcha?.execute) {
+        resolve(window.grecaptcha);
+        return;
+      }
+
+      window.setTimeout(resolveWhenReady, 50);
+    };
+
+    const existingScript = document.querySelector('script[data-recaptcha-script="true"], script[src^="https://www.google.com/recaptcha/api.js"]');
+
+    if (existingScript) {
+      if (window.grecaptcha?.execute) {
+        resolve(window.grecaptcha);
+        return;
+      }
+
+      existingScript.addEventListener('load', resolveWhenReady, { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load reCAPTCHA.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+    script.async = true;
+    script.defer = true;
+    script.dataset.recaptchaScript = 'true';
+    script.addEventListener('load', resolveWhenReady, { once: true });
+    script.addEventListener('error', () => reject(new Error('Failed to load reCAPTCHA.')), { once: true });
+    document.head.appendChild(script);
+  });
+
+  return recaptchaScriptPromise;
+}
+
+function executeRecaptcha(siteKey, action) {
+  return loadRecaptchaScript(siteKey).then((grecaptcha) => new Promise((resolve, reject) => {
+    grecaptcha.ready(() => {
+      grecaptcha.execute(siteKey, { action }).then(resolve).catch(reject);
+    });
+  }));
+}
+
+function setupRecaptchaForms() {
+  const siteKey = String(window.siteConfig?.recaptchaSiteKey || '').trim();
+  const forms = getRecaptchaProtectedForms();
+
+  if (!siteKey || !forms.length) {
+    return;
+  }
+
+  forms.forEach((form) => {
+    if (form.dataset.recaptchaBound === 'true') {
+      return;
+    }
+
+    form.dataset.recaptchaBound = 'true';
+    ensureRecaptchaTokenInput(form);
+    ensureRecaptchaNotice(form);
+
+    form.addEventListener('submit', (event) => {
+      const tokenInput = ensureRecaptchaTokenInput(form);
+
+      if (tokenInput.value || form.dataset.recaptchaSubmitting === 'true') {
+        return;
+      }
+
+      event.preventDefault();
+      form.dataset.recaptchaSubmitting = 'true';
+
+      executeRecaptcha(siteKey, form.dataset.recaptchaAction || 'submit')
+        .then((token) => {
+          tokenInput.value = token;
+          form.submit();
+        })
+        .catch((error) => {
+          console.error('reCAPTCHA failed to initialize.', error);
+          form.dataset.recaptchaSubmitting = 'false';
+          window.alert('Er ging iets mis met de beveiligingscontrole. Probeer het opnieuw.');
+        });
+    });
+  });
+}
+
 window.addEventListener('scroll', syncHeaderScrollState, { passive: true });
 
 if (window.Fancybox) {
@@ -134,4 +271,5 @@ if (window.Fancybox) {
 window.addEventListener('DOMContentLoaded', () => {
   syncHeaderScrollState();
   setupMobileMenu();
+  setupRecaptchaForms();
 });

@@ -72,7 +72,11 @@
 .contact-form .form-control:focus { border-color: rgba(1, 140, 140, 0.6); box-shadow: 0 0 0 0.2rem rgba(1, 140, 140, 0.2);}
 .contact-form .form-control::placeholder { color: rgba(160, 176, 176, 0.88); }
 .contact-form .btn { min-height: 44px; }
+.recaptcha-notice { margin: 0 0 14px; color: var(--text-muted); font-size: 0.92rem; line-height: 1.55; }
+.recaptcha-notice a { color: var(--text-main); text-decoration: underline; text-underline-offset: 0.16em; }
+.recaptcha-notice a:hover { color: var(--primary-color); }
 .contact-honeypot { position: absolute !important; left: -10000px !important; top: auto !important; width: 1px !important; height: 1px !important; overflow: hidden !important;}
+.grecaptcha-badge { visibility: hidden; }
 
 .contact-map-wrap { border: 1px solid var(--border-color); border-radius: var(--br); background: rgba(24, 31, 31, 0.85); padding: 16px;}
 .contact-map-wrap h2 { margin: 6px 8px 14px;}

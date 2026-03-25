@@ -117,7 +117,7 @@ try {
                     <div class="col-lg-7">
                         <div class="contact-panel wow animate__fadeInRight" data-wow-duration="0.7s" data-wow-delay="0.08s">
                             <h2>Neem contact op</h2>
-                            <form method="post" action="/contact/send" id="contactForm" class="contact-form">
+                            <form method="post" action="/contact/send" id="contactForm" class="contact-form" data-recaptcha-form data-recaptcha-action="contact">
                                 <div class="row g-3">
                                     <div class="col-12 contact-honeypot" aria-hidden="true">
                                         <label for="contact_company_website" class="form-label">Website</label>
@@ -139,7 +139,6 @@ try {
                                         <textarea id="contact_message" name="message" rows="6" class="form-control" placeholder="Bericht *" aria-label="Bericht" required></textarea>
                                     </div>
                                     <div class="col-12">
-                                        <input type="hidden" name="recaptcha_token" id="recaptcha_token">
                                         <button type="submit" class="btn btn-primary">Verzenden</button>
                                     </div>
                                 </div>
@@ -162,26 +161,5 @@ try {
     </footer>
 
     <%- include('../parts/scripts') %>
-    <script>
-        (function () {
-            const form = document.getElementById('contactForm');
-            const tokenInput = document.getElementById('recaptcha_token');
-            const recaptchaKey = '<%= companyInfo?.recaptcha_public_key || '' %>';
-            if (!form || !tokenInput || !recaptchaKey) return;
-
-            form.addEventListener('submit', function (event) {
-                if (!window.grecaptcha) return;
-                if (tokenInput.value) return;
-
-                event.preventDefault();
-                grecaptcha.ready(function () {
-                    grecaptcha.execute(recaptchaKey, { action: 'contact' }).then(function (token) {
-                        tokenInput.value = token;
-                        form.submit();
-                    });
-                });
-            });
-        })();
-    </script>
 </body>
 </html>
