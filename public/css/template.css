@@ -118,7 +118,7 @@ footer { color: var(--text-muted); border-top: 1px solid var(--border-color); ba
 .footer-top { padding-bottom: 36px; border-bottom: 1px solid var(--border-color); }
 .footer-brand { display: inline-block; margin-bottom: 18px; }
 .footer-brand img { width: 170px; height: auto; filter: var(--filter-white); opacity: 0.95; }
-.footer-intro { margin: 0; max-width: 34ch; color: var(--text-muted); }
+.footer-intro { margin: 0; max-width: 272px; color: var(--text-muted); }
 .footer-title { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; color: var(--text-main); }
 .footer-links,
 .footer-contact { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }

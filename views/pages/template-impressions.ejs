@@ -42,8 +42,7 @@
                             <a class="impression-masonry-item impression-reveal cat-<%= impression.category_alias %>" data-category="<%= impression.category_alias %>" data-reveal-delay="<%= Math.min(index * 45, 220) %>" href="<%= impression.path %>" data-fancybox="all-impressions" data-caption="<%= impression.name || impression.category_name %>" title="<%= impression.name || impression.category_name %>">
                                 <img src="<%= impression.path %>" alt="<%= impression.alt || impression.name || impression.category_name %>" loading="lazy">
                                 <span class="impression-overlay">
-                                    <span class="impression-category"><%= impression.category_name %></span>
-                                    <span class="impression-name"><%= impression.name || impression.category_name %></span>
+                                    <span class="impression-name"><%= impression.category_name %></span>
                                 </span>
                             </a>
                         <% }) %>

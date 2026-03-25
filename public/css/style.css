@@ -48,7 +48,7 @@
 .impression-masonry--mix .impression-masonry-item { display: block; width: 100%;}
 .impression-masonry--mix .impression-masonry-item.is-hidden {display: none;}
 .impression-masonry--mix .impression-masonry-item.is-hidden.animate__animated { animation: none !important;}
-.impressions-page-intro { max-width: 78ch; }
+.impressions-page-intro { max-width: 624px; }
 .impression-empty-state { margin-top: 18px; color: var(--text-muted); }
 
 .impression-overlay:has(.impression-category) {flex-direction: column; flex-direction: column; justify-content: flex-end; align-items: flex-start; }
@@ -107,7 +107,7 @@
     .home-hero-swiper .swiper-slide { min-height: 80vh;}
     .home-hero-swiper .swiper-slide img { height: 80vh;}
     .home-hero-overlay .hero-content { height: calc(80vh - 96px);}
-    .home-hero-overlay .hero-content h1 { max-width: 18ch;}
+    .home-hero-overlay .hero-content h1 { max-width: 144px;}
 
     .category-list,
     .services-grid { margin-top: 24px;}
@@ -176,7 +176,7 @@
 
 @media only screen and (max-width: 575px) {
 
-    .home-hero-overlay .hero-content h1 { max-width: 14ch; }
+    .home-hero-overlay .hero-content h1 { max-width: 112px; }
     .category-list { margin-top: 18px; }
     .services-grid { margin-top: 18px; }
     .contact-panel { padding: 18px 16px; }

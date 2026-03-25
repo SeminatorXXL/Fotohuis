@@ -12,9 +12,9 @@ Deze handleiding beschrijft:
 
 Open PuTTY en log in met:
 
-- Host: jouw_server_ip
+- Host: 217.160.194.31
 - User: root
-- Password: jouw_wachtwoord
+- SSH credentials selcteer juiste key
 
 ---
 

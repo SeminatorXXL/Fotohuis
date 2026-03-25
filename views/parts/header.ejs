@@ -7,8 +7,7 @@
 <% const robotsIndex = (typeof page?.seo_index === 'undefined' || Number(page.seo_index) === 1) ? 'index' : 'noindex'; %>
 <% const robotsFollow = (typeof page?.seo_follow === 'undefined' || Number(page.seo_follow) === 1) ? 'follow' : 'nofollow'; %>
 <meta name="robots" content="<%= robotsIndex %>, <%= robotsFollow %>">
-
-<meta name="google-site-verification" content="W7fe-Dge5RDO5ag_tI74e1x1R8v4tAQPgS65_vHu_E0">
+<%- companyInfo.gsc_meta_tag %>
 
 <title><%= seo.title %> | <%= companyInfo.name %></title>
 <meta name="description" content="<%= seo.description %>">

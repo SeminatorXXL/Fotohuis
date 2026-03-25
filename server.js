@@ -25,6 +25,7 @@ const BASE_URL  = process.env.BASE_URL || `http://localhost:${PORT}`;
 const SESSION_SECRET = String(process.env.SESSION_SECRET || '').trim() || crypto.randomBytes(64).toString('hex');
 const CERT_KEY_PATH = String(process.env.CERT_KEY_PATH || process.env.SSL_KEY_PATH || '').trim();
 const CERT_FULLCHAIN_PATH = String(process.env.CERT_FULLCHAIN_PATH || process.env.SSL_CERT_PATH || '').trim();
+const DEFAULT_GSC_META_TAG = '<meta name="google-site-verification" content="W7fe-Dge5RDO5ag_tI74e1x1R8v4tAQPgS65_vHu_E0">';
 
 if (!process.env.SESSION_SECRET) {
   console.warn('SESSION_SECRET ontbreekt in .env, tijdelijke fallback wordt gebruikt.');
@@ -44,8 +45,22 @@ app.set('view engine', 'ejs');
  * App locals (global data)
  * ==========================
  */
+async function ensureCompanyInfoGscMetaColumn() {
+  const [rows] = await db.query("SHOW COLUMNS FROM company_info LIKE 'gsc_meta_tag'");
+  if (!rows.length) {
+    await db.query("ALTER TABLE company_info ADD COLUMN gsc_meta_tag TEXT NULL AFTER gtm_head");
+    await db.query(
+      `UPDATE company_info
+       SET gsc_meta_tag = ?
+       WHERE id = 1 AND (gsc_meta_tag IS NULL OR TRIM(gsc_meta_tag) = '')`,
+      [DEFAULT_GSC_META_TAG]
+    );
+  }
+}
+
 (async function loadCompanyInfo() {
   try {
+    await ensureCompanyInfoGscMetaColumn();
     const [rows] = await db.query('SELECT * FROM company_info WHERE id = 1');
     app.locals.companyInfo = rows[0] || {};
   } catch (err) {
@@ -59,6 +74,7 @@ db.subscribe(({ isHealthy }) => {
   if (isHealthy) {
     void (async () => {
       try {
+        await ensureCompanyInfoGscMetaColumn();
         const [rows] = await db.query('SELECT * FROM company_info WHERE id = 1');
         app.locals.companyInfo = rows[0] || {};
       } catch (err) {

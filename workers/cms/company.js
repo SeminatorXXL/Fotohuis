@@ -75,13 +75,22 @@ async function ensureAddressColumns() {
     { name: 'smtp_pass', sql: "ALTER TABLE company_info ADD COLUMN smtp_pass VARCHAR(255) NULL AFTER smtp_user" },
     { name: 'mail_from', sql: "ALTER TABLE company_info ADD COLUMN mail_from VARCHAR(255) NULL AFTER smtp_pass" },
     { name: 'upload_allowed_ext', sql: "ALTER TABLE company_info ADD COLUMN upload_allowed_ext VARCHAR(255) NULL AFTER mail_from" },
-    { name: 'upload_max_size', sql: "ALTER TABLE company_info ADD COLUMN upload_max_size VARCHAR(32) NULL AFTER upload_allowed_ext" }
+    { name: 'upload_max_size', sql: "ALTER TABLE company_info ADD COLUMN upload_max_size VARCHAR(32) NULL AFTER upload_allowed_ext" },
+    { name: 'gsc_meta_tag', sql: "ALTER TABLE company_info ADD COLUMN gsc_meta_tag TEXT NULL AFTER gtm_head" }
   ];
 
   for (const spec of specs) {
     const [rows] = await db.query(`SHOW COLUMNS FROM company_info LIKE '${spec.name}'`);
     if (!rows.length) {
       await db.query(spec.sql);
+      if (spec.name === 'gsc_meta_tag') {
+        await db.query(
+          `UPDATE company_info
+           SET gsc_meta_tag = ?
+           WHERE id = 1 AND (gsc_meta_tag IS NULL OR TRIM(gsc_meta_tag) = '')`,
+          ['<meta name="google-site-verification" content="W7fe-Dge5RDO5ag_tI74e1x1R8v4tAQPgS65_vHu_E0">']
+        );
+      }
     }
   }
 }
@@ -270,6 +279,7 @@ const rules = [
   body('linkedin').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('tiktok').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('gtm_head').optional({ checkFalsy: true }).trim(),
+  body('gsc_meta_tag').optional({ checkFalsy: true }).trim(),
   body('gtm_body').optional({ checkFalsy: true }).trim(),
   body('cookie').optional({ checkFalsy: true }).trim(),
   body('external_scripts').optional({ checkFalsy: true }).trim(),
@@ -334,6 +344,7 @@ router.post('/cms/general', isAuthenticated, faviconUploadMiddleware, rules, asy
       linkedin: trim(req.body.linkedin),
       tiktok: trim(req.body.tiktok),
       gtm_head: req.body.gtm_head ?? '',
+      gsc_meta_tag: req.body.gsc_meta_tag ?? '',
       gtm_body: req.body.gtm_body ?? '',
       cookie: req.body.cookie ?? '',
       external_scripts: externalScriptsJson,
@@ -360,14 +371,14 @@ router.post('/cms/general', isAuthenticated, faviconUploadMiddleware, rules, asy
 
     const sql = `
       UPDATE ${TBL}
-      SET name=?, logo=?, favicon=?, email=?, mobile=?, phone=?, address_line_1=?, address_line_2=?, postal_code=?, city=?, country=?, site_url=?, opening_hours=?, coc=?, instagram=?, facebook=?, linkedin=?, tiktok=?, gtm_head=?, gtm_body=?, cookie=?, external_scripts=?, smtp_host=?, smtp_port=?, smtp_user=?, smtp_pass=?, mail_from=?, upload_allowed_ext=?, upload_max_size=?, recaptcha_public_key=?, recaptcha_private_key=?
+      SET name=?, logo=?, favicon=?, email=?, mobile=?, phone=?, address_line_1=?, address_line_2=?, postal_code=?, city=?, country=?, site_url=?, opening_hours=?, coc=?, instagram=?, facebook=?, linkedin=?, tiktok=?, gtm_head=?, gsc_meta_tag=?, gtm_body=?, cookie=?, external_scripts=?, smtp_host=?, smtp_port=?, smtp_user=?, smtp_pass=?, mail_from=?, upload_allowed_ext=?, upload_max_size=?, recaptcha_public_key=?, recaptcha_private_key=?
       WHERE id=1
     `;
     const vals = [
       data.name, data.logo, data.favicon, data.email, data.mobile, data.phone,
       data.address_line_1, data.address_line_2, data.postal_code, data.city, data.country, data.site_url, data.opening_hours, data.coc,
       data.instagram, data.facebook, data.linkedin, data.tiktok,
-      data.gtm_head, data.gtm_body, data.cookie, data.external_scripts,
+      data.gtm_head, data.gsc_meta_tag, data.gtm_body, data.cookie, data.external_scripts,
       data.smtp_host, data.smtp_port || null, data.smtp_user, data.smtp_pass, data.mail_from, data.upload_allowed_ext, data.upload_max_size,
       data.recaptcha_public_key, data.recaptcha_private_key
     ];

@@ -269,35 +269,45 @@
                         <div class="form-text">Noscript dat direct na de &lt;body&gt;-tag wordt geplaatst.</div>
                     </div>
 
-	                    <div class="col-12">
-	                        <label for="cookie" class="form-label">Cookie-script</label>
-	                        <div class="code-block">
-	                        <textarea class="form-control code-input" id="cookie" name="cookie" rows="1" placeholder="Plak hier je cookie-script"><%= companyInfo.cookie || '' %></textarea>
-	                        </div>
-	                    </div>
+                    
+                    <div class="col-12">
+                        <label for="gsc_meta_tag" class="form-label">Google Search Console meta tag</label>
+                        <div class="code-block">
+                        <textarea class="form-control code-input" id="gsc_meta_tag" name="gsc_meta_tag" rows="2"
+                            placeholder='Plak hier bijvoorbeeld: <meta name="google-site-verification" content="...">'><%= companyInfo.gsc_meta_tag || '' %></textarea>
+                        </div>
+                        <div class="form-text">Deze meta tag wordt in de &lt;head&gt; geladen. Plak hier de volledige GSC meta tag.</div>
+                    </div>
 
-	                    <div class="col-12">
-		                        <label class="form-label">Extra scripts</label>
-		                        <div class="border rounded p-3" id="externalScriptsManager">
-	                                <input type="hidden" name="external_scripts" id="externalScriptsJson" value="<%- JSON.stringify(externalScriptsRows.filter(Boolean)) %>">
-		                            <div class="d-grid gap-2" id="externalScriptsList">
-		                                <% externalScriptsRows.forEach((scriptEntry, index) => { %>
-		                                <div class="external-script-row border rounded p-3">
-                                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-		                                        <span class="fw-semibold external-script-label">Script <%= index + 1 %></span>
-		                                        <button type="button" class="btn btn-outline-danger btn-sm external-script-remove" <%= externalScriptsRows.length === 1 ? 'disabled' : '' %>>Verwijderen</button>
-                                            </div>
-                                    <textarea class="form-control" name="external_scripts_entry[]" rows="5" placeholder="<script src=&quot;https://static.salonized.com/widget.js&quot;><\/script>&#10;of&#10;console.log('Hallo');"><%= scriptEntry %></textarea>
-		                                </div>
-		                                <% }) %>
-		                            </div>
-		                            <button type="button" class="btn btn-outline-secondary mt-3" id="addExternalScriptButton">Script toevoegen</button>
-		                        </div>
-		                        <div class="form-text">Voeg hier losse JavaScript-code of complete `<script ...></script>` tags toe. Deze worden tussen WOW.js en de custom scripts geladen.</div>
-		                    </div>
+                    <div class="col-12">
+                        <label for="cookie" class="form-label">Cookie-script</label>
+                        <div class="code-block">
+                        <textarea class="form-control code-input" id="cookie" name="cookie" rows="1" placeholder="Plak hier je cookie-script"><%= companyInfo.cookie || '' %></textarea>
+                        </div>
+                    </div>
 
-	                    <div class="col-12">
-	                        <label for="recaptcha_public_key" class="form-label">reCAPTCHA publieke sleutel (V3)</label>
+                    <div class="col-12">
+                            <label class="form-label">Extra scripts</label>
+                            <div class="border rounded p-3" id="externalScriptsManager">
+                                <input type="hidden" name="external_scripts" id="externalScriptsJson" value="<%- JSON.stringify(externalScriptsRows.filter(Boolean)) %>">
+                                <div class="d-grid gap-2" id="externalScriptsList">
+                                    <% externalScriptsRows.forEach((scriptEntry, index) => { %>
+                                    <div class="external-script-row border rounded p-3">
+                                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                            <span class="fw-semibold external-script-label">Script <%= index + 1 %></span>
+                                            <button type="button" class="btn btn-outline-danger btn-sm external-script-remove" <%= externalScriptsRows.length === 1 ? 'disabled' : '' %>>Verwijderen</button>
+                                        </div>
+                                <textarea class="form-control" name="external_scripts_entry[]" rows="5" placeholder="<script src=&quot;https://static.salonized.com/widget.js&quot;><\/script>&#10;of&#10;console.log('Hallo');"><%= scriptEntry %></textarea>
+                                    </div>
+                                    <% }) %>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary mt-3" id="addExternalScriptButton">Script toevoegen</button>
+                            </div>
+                            <div class="form-text">Voeg hier losse JavaScript-code of complete `<script ...></script>` tags toe. Deze worden tussen WOW.js en de custom scripts geladen.</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="recaptcha_public_key" class="form-label">reCAPTCHA publieke sleutel (V3)</label>
                         <input type="text" class="form-control" id="recaptcha_public_key" name="recaptcha_public_key" value="<%= companyInfo.recaptcha_public_key %>">
                     </div>
 

@@ -79,6 +79,7 @@ CREATE TABLE `company_info` (
   `linkedin` varchar(255) NOT NULL,
   `tiktok` varchar(255) NOT NULL,
   `gtm_head` text NOT NULL,
+  `gsc_meta_tag` text DEFAULT NULL,
   `gtm_body` text NOT NULL,
   `cookie` text NOT NULL,
   `external_scripts` text DEFAULT NULL,
@@ -97,8 +98,8 @@ CREATE TABLE `company_info` (
 -- Gegevens worden geëxporteerd voor tabel `company_info`
 --
 
-INSERT INTO `company_info` (`id`, `name`, `logo`, `favicon`, `email`, `mobile`, `phone`, `address_line_1`, `address_line_2`, `postal_code`, `city`, `country`, `site_url`, `opening_hours`, `coc`, `instagram`, `facebook`, `linkedin`, `tiktok`, `gtm_head`, `gtm_body`, `cookie`, `external_scripts`, `smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass`, `mail_from`, `upload_allowed_ext`, `upload_max_size`, `recaptcha_public_key`, `recaptcha_private_key`) VALUES
-(1, 'Fotohuis Venray', '/media/fotohuisvenray-wit.png', '/images/fav/favicon-1772652173821.ico', 'info@beekn.nl', '06-35644440', '0478 58 09 74', 'Plataanstraat 2', '', '5802 EJ', 'Venray', '', '', '[{\"day\":\"Maandag\",\"open\":\"13:00\",\"close\":\"17:30\"},{\"day\":\"Dinsdag\",\"open\":\"13:00\",\"close\":\"17:30\"},{\"day\":\"Woensdag\",\"open\":\"13:00\",\"close\":\"17:30\"},{\"day\":\"Donderdag\",\"open\":\"13:00\",\"close\":\"17:30\"},{\"day\":\"Vrijdag\",\"open\":\"Gesloten\",\"close\":\"Gesloten\"},{\"day\":\"Zaterdag\",\"open\":\"Gesloten\",\"close\":\"Gesloten\"},{\"day\":\"Zondag\",\"open\":\"Gesloten\",\"close\":\"Gesloten\"}]', '', 'https://www.instagram.com/fotohuisvenray.nl', 'https://www.facebook.com/profile.php?id=100057657819811#', '', '', '', '', '', '[]', 'smtp.strato.com', 587, 'info@beekn.nl', 'enc:v1:8bc6b746253fa369cf5fc8d2:e4bac7a41632a06090109a4dd60c4b2c:8601875a7c22e13e9663844f67e1aa7b949317d1afeb10078a2d1ec6b2407925', 'info@beekn.nl', 'jpg,jpeg,png,webp,gif,svg', '5mb', '', '');
+INSERT INTO `company_info` (`id`, `name`, `logo`, `favicon`, `email`, `mobile`, `phone`, `address_line_1`, `address_line_2`, `postal_code`, `city`, `country`, `site_url`, `opening_hours`, `coc`, `instagram`, `facebook`, `linkedin`, `tiktok`, `gtm_head`, `gsc_meta_tag`, `gtm_body`, `cookie`, `external_scripts`, `smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass`, `mail_from`, `upload_allowed_ext`, `upload_max_size`, `recaptcha_public_key`, `recaptcha_private_key`) VALUES
+(1, 'Fotohuis Venray', '/media/fotohuisvenray-wit.png', '/images/fav/favicon-1772652173821.ico', 'info@beekn.nl', '06-35644440', '0478 58 09 74', 'Plataanstraat 2', '', '5802 EJ', 'Venray', '', '', '[{\"day\":\"Maandag\",\"open\":\"13:00\",\"close\":\"17:30\"},{\"day\":\"Dinsdag\",\"open\":\"13:00\",\"close\":\"17:30\"},{\"day\":\"Woensdag\",\"open\":\"13:00\",\"close\":\"17:30\"},{\"day\":\"Donderdag\",\"open\":\"13:00\",\"close\":\"17:30\"},{\"day\":\"Vrijdag\",\"open\":\"Gesloten\",\"close\":\"Gesloten\"},{\"day\":\"Zaterdag\",\"open\":\"Gesloten\",\"close\":\"Gesloten\"},{\"day\":\"Zondag\",\"open\":\"Gesloten\",\"close\":\"Gesloten\"}]', '', 'https://www.instagram.com/fotohuisvenray.nl', 'https://www.facebook.com/profile.php?id=100057657819811#', '', '', '<meta name=\"google-site-verification\" content=\"W7fe-Dge5RDO5ag_tI74e1x1R8v4tAQPgS65_vHu_E0\">', '', '', '[]', 'smtp.strato.com', 587, 'info@beekn.nl', 'enc:v1:8bc6b746253fa369cf5fc8d2:e4bac7a41632a06090109a4dd60c4b2c:8601875a7c22e13e9663844f67e1aa7b949317d1afeb10078a2d1ec6b2407925', 'info@beekn.nl', 'jpg,jpeg,png,webp,gif,svg', '5mb', '', '');
 
 -- --------------------------------------------------------
 
