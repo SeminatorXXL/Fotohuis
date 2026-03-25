@@ -206,6 +206,7 @@ app.use(require('./workers/cms/categories'));
 app.use(require('./workers/cms/impressions'));
 
 // Public & admin routing
+app.use(require('./workers/redirects'));
 app.use('/', require('./workers/web')(app));
 
 /**
