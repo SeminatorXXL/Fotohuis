@@ -305,6 +305,7 @@ router.post('/cms/general', isAuthenticated, faviconUploadMiddleware, rules, asy
 
     const [rows] = await db.query(`SELECT * FROM ${TBL} WHERE id = 1`);
     const current = rows.length ? rows[0] : {};
+    const canEditSiteUrl = req.session?.user?.role === 'admin';
     const faviconPath = req.file ? `/images/fav/${req.file.filename}` : trim(req.body.favicon || current.favicon || '');
     const openingHoursRows = buildOpeningHoursFromBody(req.body, current.opening_hours || '');
     const openingHoursJson = serializeOpeningHours(openingHoursRows);
@@ -336,7 +337,7 @@ router.post('/cms/general', isAuthenticated, faviconUploadMiddleware, rules, asy
       postal_code: trim(req.body.postal_code),
       city: trim(req.body.city),
       country: trim(req.body.country),
-      site_url: trim(req.body.site_url),
+      site_url: canEditSiteUrl ? trim(req.body.site_url) : trim(current.site_url),
       opening_hours: openingHoursJson,
       coc: trim(req.body.coc),
       instagram: trim(req.body.instagram),

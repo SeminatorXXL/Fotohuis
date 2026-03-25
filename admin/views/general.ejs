@@ -148,9 +148,13 @@
                         <input type="text" class="form-control" id="country" name="country" value="<%= companyInfo.country || '' %>">
                     </div>
                     <div class="col-12">
+                        <% const canEditSiteUrl = session?.user?.role === 'admin'; %>
                         <label for="site_url" class="form-label">Website URL</label>
-                        <input type="url" class="form-control" id="site_url" name="site_url" value="<%= companyInfo.site_url || '' %>" placeholder="https://www.fotohuisvenray.nl">
-                        <div class="form-text">Gebruik de volledige URL inclusief `https://`.</div>
+                        <input type="url" class="form-control" id="site_url" name="site_url" value="<%= companyInfo.site_url || '' %>" placeholder="https://www.fotohuisvenray.nl" <%= canEditSiteUrl ? '' : 'disabled' %>>
+                        <div class="form-text">
+                            Gebruik de volledige URL inclusief `https://`.
+                            <%= canEditSiteUrl ? '' : ' Alleen beheerders kunnen dit veld wijzigen.' %>
+                        </div>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Openingstijden</label>
