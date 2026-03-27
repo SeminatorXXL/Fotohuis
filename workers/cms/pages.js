@@ -12,6 +12,8 @@ router.use(loginProcess);
 const ADMIN_VIEWS = path.join(__dirname, '../../admin/views');
 
 const allowedTemplates = ['template', 'template-home', 'template-overview', 'template-cat', 'template-contact', 'template-impressions'];
+const pageSelectColumns = 'id, name, title, template, alias, google_title, meta_description, banner, banner_text, image_path, image_alt, text, seo_index, seo_follow, seo_sitemap';
+let bannerTextColumnReady;
 const slugify = (value = '') =>
   value
     .toString()
@@ -27,6 +29,27 @@ const asFlag = (value, fallback = 0) => {
   return fallback;
 };
 
+async function ensureBannerTextColumn() {
+  if (!bannerTextColumnReady) {
+    bannerTextColumnReady = (async () => {
+      const [rows] = await db.query("SHOW COLUMNS FROM pages LIKE 'banner_text'");
+      if (!rows.length) {
+        await db.query('ALTER TABLE pages ADD COLUMN banner_text TEXT NULL AFTER banner');
+      }
+    })().catch((err) => {
+      bannerTextColumnReady = null;
+      throw err;
+    });
+  }
+
+  return bannerTextColumnReady;
+}
+
+function normalizeBannerText(template, value) {
+  if (template !== 'template-home') return '';
+  return clean(value);
+}
+
 const pageRules = [
   body('name').trim().notEmpty().withMessage('Naam is verplicht.').isLength({ max: 255 }),
   body('title').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
@@ -35,6 +58,7 @@ const pageRules = [
   body('google_title').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('meta_description').optional({ checkFalsy: true }).trim(),
   body('banner').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('banner_text').optional({ checkFalsy: true }).trim().isLength({ max: 1000 }),
   body('image_path').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('image_alt').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('text').optional({ checkFalsy: true }).trim()
@@ -49,6 +73,7 @@ const emptyForm = {
   google_title: '',
   meta_description: '',
   banner: '',
+  banner_text: '',
   image_path: '',
   image_alt: '',
   text: '',
@@ -64,7 +89,7 @@ async function getCompanyInfo() {
 
 async function getOrderedPages() {
   const [rows] = await db.query(
-    `SELECT id, name, title, template, alias, google_title, meta_description, banner, image_path, image_alt, text, seo_index, seo_follow, seo_sitemap
+    `SELECT ${pageSelectColumns}
      FROM pages
      ORDER BY (alias = '/') DESC, name ASC`
   );
@@ -75,6 +100,7 @@ router.get('/cms/pages', isAuthenticated, async (req, res) => {
   try {
     req.app.set('views', ADMIN_VIEWS);
     if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
+    await ensureBannerTextColumn();
 
     const pages = await getOrderedPages();
     const companyInfo = await getCompanyInfo();
@@ -109,6 +135,7 @@ router.get(
     try {
       req.app.set('views', ADMIN_VIEWS);
       if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
+      await ensureBannerTextColumn();
 
       const result = validationResult(req);
       if (!result.isEmpty()) return res.status(400).send('Invalid page id');
@@ -116,7 +143,7 @@ router.get(
       const pages = await getOrderedPages();
       const companyInfo = await getCompanyInfo();
       const [[page]] = await db.query(
-        'SELECT id, name, title, template, alias, google_title, meta_description, banner, image_path, image_alt, text, seo_index, seo_follow, seo_sitemap FROM pages WHERE id = ?',
+        `SELECT ${pageSelectColumns} FROM pages WHERE id = ?`,
         [req.params.id]
       );
       if (!page) return res.status(404).send('Page not found');
@@ -143,6 +170,7 @@ router.post('/cms/pages/create', isAuthenticated, pageRules, async (req, res) =>
   try {
     req.app.set('views', ADMIN_VIEWS);
     if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
+    await ensureBannerTextColumn();
 
     const result = validationResult(req);
     const payload = {
@@ -153,6 +181,7 @@ router.post('/cms/pages/create', isAuthenticated, pageRules, async (req, res) =>
       google_title: clean(req.body.google_title),
       meta_description: clean(req.body.meta_description),
       banner: clean(req.body.banner),
+      banner_text: normalizeBannerText(clean(req.body.template), req.body.banner_text),
       image_path: clean(req.body.image_path),
       image_alt: clean(req.body.image_alt),
       text: sanitizeRich(req.body.text),
@@ -194,8 +223,8 @@ router.post('/cms/pages/create', isAuthenticated, pageRules, async (req, res) =>
     }
 
     const [resultInsert] = await db.query(
-      `INSERT INTO pages (template, name, title, google_title, meta_description, alias, banner, text, image_path, image_alt, seo_index, seo_follow, seo_sitemap)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO pages (template, name, title, google_title, meta_description, alias, banner, banner_text, text, image_path, image_alt, seo_index, seo_follow, seo_sitemap)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.template,
         payload.name,
@@ -204,6 +233,7 @@ router.post('/cms/pages/create', isAuthenticated, pageRules, async (req, res) =>
         payload.meta_description || null,
         payload.alias,
         payload.banner || null,
+        payload.banner_text || null,
         payload.text || null,
         payload.image_path || null,
         payload.image_alt || null,
@@ -228,6 +258,7 @@ router.post(
     try {
       req.app.set('views', ADMIN_VIEWS);
       if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
+      await ensureBannerTextColumn();
 
       const result = validationResult(req);
       const payload = {
@@ -239,6 +270,7 @@ router.post(
         google_title: clean(req.body.google_title),
         meta_description: clean(req.body.meta_description),
         banner: clean(req.body.banner),
+        banner_text: normalizeBannerText(clean(req.body.template), req.body.banner_text),
         image_path: clean(req.body.image_path),
         image_alt: clean(req.body.image_alt),
         text: sanitizeRich(req.body.text),
@@ -284,7 +316,7 @@ router.post(
 
       await db.query(
         `UPDATE pages
-         SET template = ?, name = ?, title = ?, google_title = ?, meta_description = ?, alias = ?, banner = ?, text = ?, image_path = ?, image_alt = ?, seo_index = ?, seo_follow = ?, seo_sitemap = ?
+         SET template = ?, name = ?, title = ?, google_title = ?, meta_description = ?, alias = ?, banner = ?, banner_text = ?, text = ?, image_path = ?, image_alt = ?, seo_index = ?, seo_follow = ?, seo_sitemap = ?
          WHERE id = ?`,
         [
           payload.template,
@@ -294,6 +326,7 @@ router.post(
           payload.meta_description || null,
           payload.alias,
           payload.banner || null,
+          payload.banner_text || null,
           payload.text || null,
           payload.image_path || null,
           payload.image_alt || null,

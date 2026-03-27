@@ -156,6 +156,10 @@
                     placeholder: '/media/banners/pagina.jpg'
                   }) %>
                 </div>
+                <div class="col-12" id="bannerTextFieldWrap">
+                  <label for="banner_text" class="form-label">Bannertekst</label>
+                  <textarea id="banner_text" name="banner_text" class="form-control" rows="3" placeholder="Korte tekst in de banner van de homepage"><%= pageForm.banner_text || '' %></textarea>
+                </div>
                 <div class="col-md-6">
                   <%- include('parts/image_field_with_picker', {
                     fieldId: 'image_path',
@@ -196,12 +200,14 @@
     const templateSelect = document.getElementById('template');
     const aliasInput = document.getElementById('page_alias');
     const bannerWrap = document.getElementById('bannerFieldWrap');
-    if (!templateSelect || !aliasInput || !bannerWrap) return;
+    const bannerTextWrap = document.getElementById('bannerTextFieldWrap');
+    if (!templateSelect || !aliasInput || !bannerWrap || !bannerTextWrap) return;
 
     function updateBannerVisibility() {
-      const isHomeByTemplate = templateSelect.value === 'template-home';
+      const isHomeTemplate = templateSelect.value === 'template-home';
       const isHomeByAlias = (aliasInput.value || '').trim() === '/';
-      bannerWrap.style.display = (isHomeByTemplate || isHomeByAlias) ? 'none' : '';
+      bannerWrap.style.display = (isHomeTemplate || isHomeByAlias) ? 'none' : '';
+      bannerTextWrap.style.display = isHomeTemplate ? '' : 'none';
     }
 
     templateSelect.addEventListener('change', updateBannerVisibility);

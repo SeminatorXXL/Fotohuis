@@ -46,7 +46,7 @@
                             title="<%= impression.name || page.name %>">
                             <img src="<%= impression.path %>" alt="<%= impression.alt || impression.name || page.name %>" loading="lazy">
                             <span class="impression-overlay">
-                                <span class="impression-name"><%= impression.name || page.name %></span>
+                                <span class="impression-name d-none"><%= impression.name || page.name %></span>
                             </span>
                         </a>
                     <% }) %>

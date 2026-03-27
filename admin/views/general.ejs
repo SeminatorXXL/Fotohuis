@@ -291,23 +291,23 @@
                     </div>
 
                     <div class="col-12">
-                            <label class="form-label">Extra scripts</label>
-                            <div class="border rounded p-3" id="externalScriptsManager">
-                                <input type="hidden" name="external_scripts" id="externalScriptsJson" value="<%- JSON.stringify(externalScriptsRows.filter(Boolean)) %>">
-                                <div class="d-grid gap-2" id="externalScriptsList">
-                                    <% externalScriptsRows.forEach((scriptEntry, index) => { %>
-                                    <div class="external-script-row border rounded p-3">
-                                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                                            <span class="fw-semibold external-script-label">Script <%= index + 1 %></span>
-                                            <button type="button" class="btn btn-outline-danger btn-sm external-script-remove" <%= externalScriptsRows.length === 1 ? 'disabled' : '' %>>Verwijderen</button>
-                                        </div>
-                                <textarea class="form-control" name="external_scripts_entry[]" rows="5" placeholder="<script src=&quot;https://static.salonized.com/widget.js&quot;><\/script>&#10;of&#10;console.log('Hallo');"><%= scriptEntry %></textarea>
+                        <label class="form-label">Extra scripts</label>
+                        <div class="border rounded p-3" id="externalScriptsManager">
+                            <input type="hidden" name="external_scripts" id="externalScriptsJson" value="<%- JSON.stringify(externalScriptsRows.filter(Boolean)) %>">
+                            <div class="d-grid gap-2" id="externalScriptsList">
+                                <% externalScriptsRows.forEach((scriptEntry, index) => { %>
+                                <div class="external-script-row border rounded p-3">
+                                    <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                        <span class="fw-semibold external-script-label">Script <%= index + 1 %></span>
+                                        <button type="button" class="btn btn-outline-danger btn-sm external-script-remove" <%= externalScriptsRows.length === 1 ? 'disabled' : '' %>>Verwijderen</button>
                                     </div>
-                                    <% }) %>
+                                    <textarea class="form-control" name="external_scripts_entry[]" rows="5" placeholder="<script src=&quot;https://static.salonized.com/widget.js&quot;><\/script>&#10;of&#10;console.log('Hallo');"><%= scriptEntry %></textarea>
                                 </div>
-                                <button type="button" class="btn btn-outline-secondary mt-3" id="addExternalScriptButton">Script toevoegen</button>
+                                <% }) %>
                             </div>
-                            <div class="form-text">Voeg hier losse JavaScript-code of complete `<script ...></script>` tags toe. Deze worden tussen WOW.js en de custom scripts geladen.</div>
+                            <button type="button" class="btn btn-outline-secondary mt-3" id="addExternalScriptButton">Script toevoegen</button>
+                        </div>
+                        <div class="form-text">Voeg hier losse JavaScript-code of complete `<script ...></script>` tags toe. Deze worden tussen WOW.js en de custom scripts geladen.</div>
                     </div>
 
                     <div class="col-12">
