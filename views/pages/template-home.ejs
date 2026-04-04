@@ -22,7 +22,9 @@
                 <% if (impressions && impressions.length) { %>
                     <% impressions.forEach(impression => { %>
                         <figure class="swiper-slide">
-                            <img src="<%= impression.path %>?w=1920&h=920" alt="<%= impression.alt || impression.name || page.name %>" width="1920" height="920">
+                            <% const focusX = Number.isFinite(Number(impression.focus_x)) ? Number(impression.focus_x) : 50; %>
+                            <% const focusY = Number.isFinite(Number(impression.focus_y)) ? Number(impression.focus_y) : 50; %>
+                            <img src="<%= impression.path %>?w=1920&h=920&fx=<%= focusX %>&fy=<%= focusY %>" alt="<%= impression.alt || impression.name || page.name %>" width="1920" height="920" style="object-position: <%= focusX %>% <%= focusY %>%;">
                         </figure>
                     <% }) %>
                 <% } else { %>

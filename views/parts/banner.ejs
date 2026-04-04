@@ -2,7 +2,9 @@
     <div class="banner">
         <figure class="image">
             <% const bannerSrc = page.banner || page.cover %>
-            <img src="<%= bannerSrc %>?w=2560&h=400" alt="" width="1920" height="300">
+            <% const bannerFocusX = Number.isFinite(Number(page.banner_focus_x)) ? Number(page.banner_focus_x) : 50 %>
+            <% const bannerFocusY = Number.isFinite(Number(page.banner_focus_y)) ? Number(page.banner_focus_y) : 50 %>
+            <img src="<%= bannerSrc %>?w=2560&h=400&fx=<%= bannerFocusX %>&fy=<%= bannerFocusY %>" alt="" width="1920" height="300" style="object-position: <%= bannerFocusX %>% <%= bannerFocusY %>%">
         </figure>
         <div class="content">
             <div class="container">

@@ -28,24 +28,38 @@ const ALLOWED_TEMPLATES = fs
   .filter(f => f.endsWith('.ejs'))
   .map(f => f.replace('.ejs', ''));
 
-let homepageFlagReady;
+let impressionColumnsReady;
 
-async function ensureHomepageFlagColumn() {
-  if (!homepageFlagReady) {
-    homepageFlagReady = (async () => {
+async function ensureImpressionColumns() {
+  if (!impressionColumnsReady) {
+    impressionColumnsReady = (async () => {
       const [rows] = await db.query("SHOW COLUMNS FROM impressions LIKE 'exclude_from_homepage'");
       if (!rows.length) {
         await db.query(
           'ALTER TABLE impressions ADD COLUMN exclude_from_homepage TINYINT(1) NOT NULL DEFAULT 0 AFTER category_id'
         );
       }
+
+      const [focusXRows] = await db.query("SHOW COLUMNS FROM impressions LIKE 'focus_x'");
+      if (!focusXRows.length) {
+        await db.query(
+          'ALTER TABLE impressions ADD COLUMN focus_x DECIMAL(5,2) NOT NULL DEFAULT 50.00 AFTER exclude_from_homepage'
+        );
+      }
+
+      const [focusYRows] = await db.query("SHOW COLUMNS FROM impressions LIKE 'focus_y'");
+      if (!focusYRows.length) {
+        await db.query(
+          'ALTER TABLE impressions ADD COLUMN focus_y DECIMAL(5,2) NOT NULL DEFAULT 50.00 AFTER focus_x'
+        );
+      }
     })().catch((err) => {
-      homepageFlagReady = null;
+      impressionColumnsReady = null;
       throw err;
     });
   }
 
-  return homepageFlagReady;
+  return impressionColumnsReady;
 }
 
 function setPublicViews(req) {
@@ -223,7 +237,7 @@ async function getCommonData() {
  */
 router.get('/', async (req, res) => {
   try {
-    await ensureHomepageFlagColumn();
+    await ensureImpressionColumns();
     setPublicViews(req);
 
     const [rows] = await db.query(
@@ -236,7 +250,7 @@ router.get('/', async (req, res) => {
 
     const page = rows[0];
     const [impressions] = await db.query(
-      'SELECT id, name, alt, path FROM impressions WHERE exclude_from_homepage = 0 ORDER BY RAND()'
+      'SELECT id, name, alt, path, focus_x, focus_y FROM impressions WHERE exclude_from_homepage = 0 ORDER BY RAND()'
     );
     const common = await getCommonData();
 

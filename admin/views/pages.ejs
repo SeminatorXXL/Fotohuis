@@ -156,6 +156,17 @@
                     placeholder: '/media/banners/pagina.jpg'
                   }) %>
                 </div>
+                <%- include('parts/focus_point_picker', {
+                  imageFieldId: 'banner',
+                  focusXFieldId: 'banner_focus_x',
+                  focusYFieldId: 'banner_focus_y',
+                  focusXFieldName: 'banner_focus_x',
+                  focusYFieldName: 'banner_focus_y',
+                  focusXValue: pageForm.banner_focus_x,
+                  focusYValue: pageForm.banner_focus_y,
+                  label: 'Focuspunt vervolgpagina-banner',
+                  helpText: 'Klik op de preview om te bepalen welk deel van de banner zichtbaar moet blijven bij de uitsnede van 2560 x 400.'
+                }) %>
                 <div class="col-12" id="bannerTextFieldWrap">
                   <label for="banner_text" class="form-label">Bannertekst</label>
                   <textarea id="banner_text" name="banner_text" class="form-control" rows="3" placeholder="Korte tekst in de banner van de homepage"><%= pageForm.banner_text || '' %></textarea>

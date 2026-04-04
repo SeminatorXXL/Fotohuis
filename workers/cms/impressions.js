@@ -11,35 +11,76 @@ router.use(loginProcess);
 
 const ADMIN_VIEWS = path.join(__dirname, '../../admin/views');
 
-let homepageFlagReady;
+let impressionColumnsReady;
 
 function normalizeHomepageFlag(value) {
   return value ? 1 : 0;
 }
 
-async function ensureHomepageFlagColumn() {
-  if (!homepageFlagReady) {
-    homepageFlagReady = (async () => {
+function normalizeFocusCoordinate(value) {
+  const parsed = Number.parseFloat(String(value ?? '').replace(',', '.'));
+
+  if (!Number.isFinite(parsed)) {
+    return 50;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(parsed * 100) / 100));
+}
+
+function validateFocusCoordinate(value, fieldLabel) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+
+  if (normalized === '') {
+    return true;
+  }
+
+  const parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+    throw new Error(`${fieldLabel} moet tussen 0 en 100 liggen.`);
+  }
+
+  return true;
+}
+
+async function ensureImpressionColumns() {
+  if (!impressionColumnsReady) {
+    impressionColumnsReady = (async () => {
       const [rows] = await db.query("SHOW COLUMNS FROM impressions LIKE 'exclude_from_homepage'");
       if (!rows.length) {
         await db.query(
           'ALTER TABLE impressions ADD COLUMN exclude_from_homepage TINYINT(1) NOT NULL DEFAULT 0 AFTER category_id'
         );
       }
+
+      const [focusXRows] = await db.query("SHOW COLUMNS FROM impressions LIKE 'focus_x'");
+      if (!focusXRows.length) {
+        await db.query(
+          'ALTER TABLE impressions ADD COLUMN focus_x DECIMAL(5,2) NOT NULL DEFAULT 50.00 AFTER exclude_from_homepage'
+        );
+      }
+
+      const [focusYRows] = await db.query("SHOW COLUMNS FROM impressions LIKE 'focus_y'");
+      if (!focusYRows.length) {
+        await db.query(
+          'ALTER TABLE impressions ADD COLUMN focus_y DECIMAL(5,2) NOT NULL DEFAULT 50.00 AFTER focus_x'
+        );
+      }
     })().catch((err) => {
-      homepageFlagReady = null;
+      impressionColumnsReady = null;
       throw err;
     });
   }
 
-  return homepageFlagReady;
+  return impressionColumnsReady;
 }
 
 const impressionRules = [
   body('name').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('alt').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('path').trim().notEmpty().withMessage('Afbeelding pad is verplicht.').isLength({ max: 255 }),
-  body('category_id').isInt({ min: 1 }).withMessage('Kies een categorie.').toInt()
+  body('category_id').isInt({ min: 1 }).withMessage('Kies een categorie.').toInt(),
+  body('focus_x').custom((value) => validateFocusCoordinate(value, 'Focus X')),
+  body('focus_y').custom((value) => validateFocusCoordinate(value, 'Focus Y'))
 ];
 
 async function getCompanyInfo() {
@@ -50,7 +91,7 @@ async function getCompanyInfo() {
 async function getImpressions(categoryId = null) {
   const params = [];
   let sql =
-    `SELECT i.id, i.name, i.alt, i.path, i.category_id, i.exclude_from_homepage, i.created_at, c.name AS category_name, c.alias AS category_alias
+    `SELECT i.id, i.name, i.alt, i.path, i.category_id, i.exclude_from_homepage, i.focus_x, i.focus_y, i.created_at, c.name AS category_name, c.alias AS category_alias
      FROM impressions i
      INNER JOIN categories c ON c.id = i.category_id`;
 
@@ -71,7 +112,7 @@ function buildFilterQuery(categoryId) {
 
 router.get('/cms/impression', isAuthenticated, async (req, res) => {
   try {
-    await ensureHomepageFlagColumn();
+    await ensureImpressionColumns();
     req.app.set('views', ADMIN_VIEWS);
     if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
 
@@ -85,7 +126,7 @@ router.get('/cms/impression', isAuthenticated, async (req, res) => {
       categories,
       impressions,
       selectedCategoryId,
-      impressionForm: { id: null, name: '', alt: '', path: '', category_id: '', exclude_from_homepage: 0 },
+      impressionForm: { id: null, name: '', alt: '', path: '', category_id: '', exclude_from_homepage: 0, focus_x: 50, focus_y: 50 },
       editing: false,
       errors: [],
       saved: req.query.saved === '1',
@@ -104,7 +145,7 @@ router.get(
   [param('id').isInt().toInt().withMessage('Ongeldig impressie id.')],
   async (req, res) => {
     try {
-      await ensureHomepageFlagColumn();
+      await ensureImpressionColumns();
       req.app.set('views', ADMIN_VIEWS);
       if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
 
@@ -140,7 +181,7 @@ router.get(
 
 router.post('/cms/impression/create', isAuthenticated, impressionRules, async (req, res) => {
   try {
-    await ensureHomepageFlagColumn();
+    await ensureImpressionColumns();
     req.app.set('views', ADMIN_VIEWS);
     if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
 
@@ -151,7 +192,9 @@ router.post('/cms/impression/create', isAuthenticated, impressionRules, async (r
       alt: clean(req.body.alt),
       path: clean(req.body.path),
       category_id: Number(req.body.category_id),
-      exclude_from_homepage: normalizeHomepageFlag(req.body.exclude_from_homepage)
+      exclude_from_homepage: normalizeHomepageFlag(req.body.exclude_from_homepage),
+      focus_x: normalizeFocusCoordinate(req.body.focus_x),
+      focus_y: normalizeFocusCoordinate(req.body.focus_y)
     };
 
     const [categories] = await db.query('SELECT id, name FROM categories ORDER BY name ASC');
@@ -174,8 +217,8 @@ router.post('/cms/impression/create', isAuthenticated, impressionRules, async (r
     }
 
     await db.query(
-      'INSERT INTO impressions (name, alt, path, category_id, exclude_from_homepage) VALUES (?, ?, ?, ?, ?)',
-      [payload.name || null, payload.alt || null, payload.path, payload.category_id, payload.exclude_from_homepage]
+      'INSERT INTO impressions (name, alt, path, category_id, exclude_from_homepage, focus_x, focus_y) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [payload.name || null, payload.alt || null, payload.path, payload.category_id, payload.exclude_from_homepage, payload.focus_x, payload.focus_y]
     );
 
     const query = selectedCategoryId ? `?saved=1&category_id=${selectedCategoryId}` : '?saved=1';
@@ -192,7 +235,7 @@ router.post(
   [param('id').isInt().toInt().withMessage('Ongeldig impressie id.'), ...impressionRules],
   async (req, res) => {
     try {
-      await ensureHomepageFlagColumn();
+      await ensureImpressionColumns();
       req.app.set('views', ADMIN_VIEWS);
       if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
 
@@ -204,7 +247,9 @@ router.post(
         alt: clean(req.body.alt),
         path: clean(req.body.path),
         category_id: Number(req.body.category_id),
-        exclude_from_homepage: normalizeHomepageFlag(req.body.exclude_from_homepage)
+        exclude_from_homepage: normalizeHomepageFlag(req.body.exclude_from_homepage),
+        focus_x: normalizeFocusCoordinate(req.body.focus_x),
+        focus_y: normalizeFocusCoordinate(req.body.focus_y)
       };
 
       const [categories] = await db.query('SELECT id, name FROM categories ORDER BY name ASC');
@@ -227,8 +272,8 @@ router.post(
       }
 
       await db.query(
-        'UPDATE impressions SET name = ?, alt = ?, path = ?, category_id = ?, exclude_from_homepage = ? WHERE id = ?',
-        [payload.name || null, payload.alt || null, payload.path, payload.category_id, payload.exclude_from_homepage, payload.id]
+        'UPDATE impressions SET name = ?, alt = ?, path = ?, category_id = ?, exclude_from_homepage = ?, focus_x = ?, focus_y = ? WHERE id = ?',
+        [payload.name || null, payload.alt || null, payload.path, payload.category_id, payload.exclude_from_homepage, payload.focus_x, payload.focus_y, payload.id]
       );
 
       const query = selectedCategoryId ? `?saved=1&category_id=${selectedCategoryId}` : '?saved=1';

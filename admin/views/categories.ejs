@@ -132,6 +132,17 @@
                     placeholder: '/media/categories/banner.jpg'
                   }) %>
                 </div>
+                <%- include('parts/focus_point_picker', {
+                  imageFieldId: 'banner',
+                  focusXFieldId: 'banner_focus_x',
+                  focusYFieldId: 'banner_focus_y',
+                  focusXFieldName: 'banner_focus_x',
+                  focusYFieldName: 'banner_focus_y',
+                  focusXValue: categoryForm.banner_focus_x,
+                  focusYValue: categoryForm.banner_focus_y,
+                  label: 'Focuspunt vervolgpagina-banner',
+                  helpText: 'Klik op de preview om te bepalen welk deel van de banner zichtbaar moet blijven bij de uitsnede van 2560 x 400.'
+                }) %>
                 <div class="col-12">
                   <label for="title" class="form-label">Titel</label>
                   <input id="title" name="title" class="form-control" value="<%= categoryForm.title || '' %>">

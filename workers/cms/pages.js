@@ -12,8 +12,8 @@ router.use(loginProcess);
 const ADMIN_VIEWS = path.join(__dirname, '../../admin/views');
 
 const allowedTemplates = ['template', 'template-home', 'template-overview', 'template-cat', 'template-contact', 'template-impressions'];
-const pageSelectColumns = 'id, name, title, template, alias, google_title, meta_description, banner, banner_text, image_path, image_alt, text, seo_index, seo_follow, seo_sitemap';
-let bannerTextColumnReady;
+const pageSelectColumns = 'id, name, title, template, alias, google_title, meta_description, banner, banner_text, banner_focus_x, banner_focus_y, image_path, image_alt, text, seo_index, seo_follow, seo_sitemap';
+let pageColumnsReady;
 const slugify = (value = '') =>
   value
     .toString()
@@ -30,24 +30,57 @@ const asFlag = (value, fallback = 0) => {
 };
 
 async function ensureBannerTextColumn() {
-  if (!bannerTextColumnReady) {
-    bannerTextColumnReady = (async () => {
+  if (!pageColumnsReady) {
+    pageColumnsReady = (async () => {
       const [rows] = await db.query("SHOW COLUMNS FROM pages LIKE 'banner_text'");
       if (!rows.length) {
         await db.query('ALTER TABLE pages ADD COLUMN banner_text TEXT NULL AFTER banner');
       }
+      const [focusXRows] = await db.query("SHOW COLUMNS FROM pages LIKE 'banner_focus_x'");
+      if (!focusXRows.length) {
+        await db.query('ALTER TABLE pages ADD COLUMN banner_focus_x DECIMAL(5,2) NOT NULL DEFAULT 50.00 AFTER banner_text');
+      }
+      const [focusYRows] = await db.query("SHOW COLUMNS FROM pages LIKE 'banner_focus_y'");
+      if (!focusYRows.length) {
+        await db.query('ALTER TABLE pages ADD COLUMN banner_focus_y DECIMAL(5,2) NOT NULL DEFAULT 50.00 AFTER banner_focus_x');
+      }
     })().catch((err) => {
-      bannerTextColumnReady = null;
+      pageColumnsReady = null;
       throw err;
     });
   }
 
-  return bannerTextColumnReady;
+  return pageColumnsReady;
 }
 
 function normalizeBannerText(template, value) {
   if (template !== 'template-home') return '';
   return clean(value);
+}
+
+function normalizeFocusCoordinate(value) {
+  const parsed = Number.parseFloat(String(value ?? '').replace(',', '.'));
+
+  if (!Number.isFinite(parsed)) {
+    return 50;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(parsed * 100) / 100));
+}
+
+function validateFocusCoordinate(value, fieldLabel) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+
+  if (normalized === '') {
+    return true;
+  }
+
+  const parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+    throw new Error(`${fieldLabel} moet tussen 0 en 100 liggen.`);
+  }
+
+  return true;
 }
 
 const pageRules = [
@@ -59,6 +92,8 @@ const pageRules = [
   body('meta_description').optional({ checkFalsy: true }).trim(),
   body('banner').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('banner_text').optional({ checkFalsy: true }).trim().isLength({ max: 1000 }),
+  body('banner_focus_x').custom((value) => validateFocusCoordinate(value, 'Banner focus X')),
+  body('banner_focus_y').custom((value) => validateFocusCoordinate(value, 'Banner focus Y')),
   body('image_path').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('image_alt').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('text').optional({ checkFalsy: true }).trim()
@@ -74,6 +109,8 @@ const emptyForm = {
   meta_description: '',
   banner: '',
   banner_text: '',
+  banner_focus_x: 50,
+  banner_focus_y: 50,
   image_path: '',
   image_alt: '',
   text: '',
@@ -182,6 +219,8 @@ router.post('/cms/pages/create', isAuthenticated, pageRules, async (req, res) =>
       meta_description: clean(req.body.meta_description),
       banner: clean(req.body.banner),
       banner_text: normalizeBannerText(clean(req.body.template), req.body.banner_text),
+      banner_focus_x: normalizeFocusCoordinate(req.body.banner_focus_x),
+      banner_focus_y: normalizeFocusCoordinate(req.body.banner_focus_y),
       image_path: clean(req.body.image_path),
       image_alt: clean(req.body.image_alt),
       text: sanitizeRich(req.body.text),
@@ -223,8 +262,8 @@ router.post('/cms/pages/create', isAuthenticated, pageRules, async (req, res) =>
     }
 
     const [resultInsert] = await db.query(
-      `INSERT INTO pages (template, name, title, google_title, meta_description, alias, banner, banner_text, text, image_path, image_alt, seo_index, seo_follow, seo_sitemap)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO pages (template, name, title, google_title, meta_description, alias, banner, banner_text, banner_focus_x, banner_focus_y, text, image_path, image_alt, seo_index, seo_follow, seo_sitemap)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.template,
         payload.name,
@@ -234,6 +273,8 @@ router.post('/cms/pages/create', isAuthenticated, pageRules, async (req, res) =>
         payload.alias,
         payload.banner || null,
         payload.banner_text || null,
+        payload.banner_focus_x,
+        payload.banner_focus_y,
         payload.text || null,
         payload.image_path || null,
         payload.image_alt || null,
@@ -271,6 +312,8 @@ router.post(
         meta_description: clean(req.body.meta_description),
         banner: clean(req.body.banner),
         banner_text: normalizeBannerText(clean(req.body.template), req.body.banner_text),
+        banner_focus_x: normalizeFocusCoordinate(req.body.banner_focus_x),
+        banner_focus_y: normalizeFocusCoordinate(req.body.banner_focus_y),
         image_path: clean(req.body.image_path),
         image_alt: clean(req.body.image_alt),
         text: sanitizeRich(req.body.text),
@@ -316,7 +359,7 @@ router.post(
 
       await db.query(
         `UPDATE pages
-         SET template = ?, name = ?, title = ?, google_title = ?, meta_description = ?, alias = ?, banner = ?, banner_text = ?, text = ?, image_path = ?, image_alt = ?, seo_index = ?, seo_follow = ?, seo_sitemap = ?
+         SET template = ?, name = ?, title = ?, google_title = ?, meta_description = ?, alias = ?, banner = ?, banner_text = ?, banner_focus_x = ?, banner_focus_y = ?, text = ?, image_path = ?, image_alt = ?, seo_index = ?, seo_follow = ?, seo_sitemap = ?
          WHERE id = ?`,
         [
           payload.template,
@@ -327,6 +370,8 @@ router.post(
           payload.alias,
           payload.banner || null,
           payload.banner_text || null,
+          payload.banner_focus_x,
+          payload.banner_focus_y,
           payload.text || null,
           payload.image_path || null,
           payload.image_alt || null,

@@ -10,6 +10,7 @@ const router = express.Router();
 router.use(loginProcess);
 
 const ADMIN_VIEWS = path.join(__dirname, '../../admin/views');
+let categoryColumnsReady;
 
 const slugify = (value = '') =>
   value
@@ -18,6 +19,51 @@ const slugify = (value = '') =>
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+
+function normalizeFocusCoordinate(value) {
+  const parsed = Number.parseFloat(String(value ?? '').replace(',', '.'));
+
+  if (!Number.isFinite(parsed)) {
+    return 50;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(parsed * 100) / 100));
+}
+
+function validateFocusCoordinate(value, fieldLabel) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+
+  if (normalized === '') {
+    return true;
+  }
+
+  const parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+    throw new Error(`${fieldLabel} moet tussen 0 en 100 liggen.`);
+  }
+
+  return true;
+}
+
+async function ensureCategoryColumns() {
+  if (!categoryColumnsReady) {
+    categoryColumnsReady = (async () => {
+      const [focusXRows] = await db.query("SHOW COLUMNS FROM categories LIKE 'banner_focus_x'");
+      if (!focusXRows.length) {
+        await db.query('ALTER TABLE categories ADD COLUMN banner_focus_x DECIMAL(5,2) NOT NULL DEFAULT 50.00 AFTER banner');
+      }
+      const [focusYRows] = await db.query("SHOW COLUMNS FROM categories LIKE 'banner_focus_y'");
+      if (!focusYRows.length) {
+        await db.query('ALTER TABLE categories ADD COLUMN banner_focus_y DECIMAL(5,2) NOT NULL DEFAULT 50.00 AFTER banner_focus_x');
+      }
+    })().catch((err) => {
+      categoryColumnsReady = null;
+      throw err;
+    });
+  }
+
+  return categoryColumnsReady;
+}
 
 const categoryRules = [
   body('name').trim().notEmpty().withMessage('Naam is verplicht.').isLength({ max: 255 }),
@@ -32,6 +78,8 @@ const categoryRules = [
   body('meta_description').optional({ checkFalsy: true }).trim(),
   body('cover').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
   body('banner').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  body('banner_focus_x').custom((value) => validateFocusCoordinate(value, 'Banner focus X')),
+  body('banner_focus_y').custom((value) => validateFocusCoordinate(value, 'Banner focus Y')),
   body('text').optional({ checkFalsy: true }).trim()
 ];
 
@@ -44,6 +92,7 @@ router.get('/cms/categories', isAuthenticated, async (req, res) => {
   try {
     req.app.set('views', ADMIN_VIEWS);
     if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
+    await ensureCategoryColumns();
 
     const [categories] = await db.query(
       `SELECT c.*,
@@ -65,6 +114,8 @@ router.get('/cms/categories', isAuthenticated, async (req, res) => {
           meta_description: '',
           cover: '',
           banner: '',
+          banner_focus_x: 50,
+          banner_focus_y: 50,
           text: ''
         }
       : (categories[0] || {
@@ -76,6 +127,8 @@ router.get('/cms/categories', isAuthenticated, async (req, res) => {
           meta_description: '',
           cover: '',
           banner: '',
+          banner_focus_x: 50,
+          banner_focus_y: 50,
           text: ''
         });
 
@@ -103,6 +156,7 @@ router.get(
     try {
       req.app.set('views', ADMIN_VIEWS);
       if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
+      await ensureCategoryColumns();
 
       const result = validationResult(req);
       if (!result.isEmpty()) return res.status(400).send('Invalid category id');
@@ -141,6 +195,7 @@ router.post('/cms/categories/create', isAuthenticated, categoryRules, async (req
   try {
     req.app.set('views', ADMIN_VIEWS);
     if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
+    await ensureCategoryColumns();
 
     const result = validationResult(req);
     const payload = {
@@ -151,6 +206,8 @@ router.post('/cms/categories/create', isAuthenticated, categoryRules, async (req
       meta_description: clean(req.body.meta_description),
       cover: clean(req.body.cover),
       banner: clean(req.body.banner),
+      banner_focus_x: normalizeFocusCoordinate(req.body.banner_focus_x),
+      banner_focus_y: normalizeFocusCoordinate(req.body.banner_focus_y),
       text: sanitizeRich(req.body.text)
     };
 
@@ -203,8 +260,8 @@ router.post('/cms/categories/create', isAuthenticated, categoryRules, async (req
 
     const [resultInsert] = await db.query(
       `INSERT INTO categories
-       (alias, name, title, google_title, meta_description, cover, banner, text)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (alias, name, title, google_title, meta_description, cover, banner, banner_focus_x, banner_focus_y, text)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.alias,
         payload.name,
@@ -213,6 +270,8 @@ router.post('/cms/categories/create', isAuthenticated, categoryRules, async (req
         payload.meta_description || null,
         payload.cover || '',
         payload.banner || null,
+        payload.banner_focus_x,
+        payload.banner_focus_y,
         payload.text || null
       ]
     );
@@ -232,6 +291,7 @@ router.post(
     try {
       req.app.set('views', ADMIN_VIEWS);
       if (req.session?.cookie) req.session.cookie.maxAge = 60 * 60 * 1000;
+      await ensureCategoryColumns();
 
       const result = validationResult(req);
       const payload = {
@@ -243,6 +303,8 @@ router.post(
         meta_description: clean(req.body.meta_description),
         cover: clean(req.body.cover),
         banner: clean(req.body.banner),
+        banner_focus_x: normalizeFocusCoordinate(req.body.banner_focus_x),
+        banner_focus_y: normalizeFocusCoordinate(req.body.banner_focus_y),
         text: sanitizeRich(req.body.text)
       };
 
@@ -288,7 +350,7 @@ router.post(
 
       await db.query(
         `UPDATE categories
-         SET alias = ?, name = ?, title = ?, google_title = ?, meta_description = ?, cover = ?, banner = ?, text = ?
+         SET alias = ?, name = ?, title = ?, google_title = ?, meta_description = ?, cover = ?, banner = ?, banner_focus_x = ?, banner_focus_y = ?, text = ?
          WHERE id = ?`,
         [
           payload.alias,
@@ -298,6 +360,8 @@ router.post(
           payload.meta_description || null,
           payload.cover || '',
           payload.banner || null,
+          payload.banner_focus_x,
+          payload.banner_focus_y,
           payload.text || null,
           payload.id
         ]
