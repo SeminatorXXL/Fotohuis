@@ -1,8 +1,13 @@
 function syncHeaderScrollState() {
   const header = document.querySelector('.site-header');
+  const homePage = document.querySelector('main.home-page');
+  const isAtPageOrigin = window.scrollX <= 0 && window.scrollY <= 0;
+
   if (header) {
     header.classList.toggle('is-scrolled', window.scrollY > 8);
   }
+
+  document.body.classList.toggle('is-home-top', Boolean(homePage) && isAtPageOrigin);
 }
 
 function setupMobileMenu() {
@@ -260,6 +265,75 @@ function setupRecaptchaForms() {
   });
 }
 
+function findSalonizedBookingIframe() {
+  return document.querySelector('iframe[src*="widget.salonized.com/button"]');
+}
+
+function clickSalonizedBookingIframe() {
+  const iframe = findSalonizedBookingIframe();
+
+  if (!(iframe instanceof HTMLIFrameElement)) {
+    return false;
+  }
+
+  iframe.focus();
+  iframe.click();
+
+  return iframe.dispatchEvent(new MouseEvent('click', {
+    view: window,
+    bubbles: true,
+    cancelable: true
+  }));
+}
+
+function triggerSalonizedBookingHash() {
+  const bookingHash = '#sz-booking-toggle';
+
+  if (window.location.hash === bookingHash) {
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`);
+  }
+
+  window.location.hash = bookingHash;
+}
+
+function setupSalonizedBookingButtons() {
+  const bookingButtons = document.querySelectorAll('[data-booking-trigger="salonized"]');
+
+  if (!bookingButtons.length) {
+    return;
+  }
+
+  bookingButtons.forEach((button) => {
+    if (button.dataset.bookingTriggerBound === 'true') {
+      return;
+    }
+
+    button.dataset.bookingTriggerBound = 'true';
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+
+      clickSalonizedBookingIframe();
+      triggerSalonizedBookingHash();
+
+      let attemptsLeft = 8;
+
+      const retryOpen = () => {
+        if (clickSalonizedBookingIframe()) {
+          return;
+        }
+
+        attemptsLeft -= 1;
+
+        if (attemptsLeft > 0) {
+          window.setTimeout(retryOpen, 250);
+        }
+      };
+
+      window.setTimeout(retryOpen, 150);
+    });
+  });
+}
+
 window.addEventListener('scroll', syncHeaderScrollState, { passive: true });
 
 if (window.Fancybox) {
@@ -272,4 +346,5 @@ window.addEventListener('DOMContentLoaded', () => {
   syncHeaderScrollState();
   setupMobileMenu();
   setupRecaptchaForms();
+  setupSalonizedBookingButtons();
 });
